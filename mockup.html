@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FootageStore — UI Mockup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0a0a0a',
+            surface: '#141414',
+            surfaceHover: '#1a1a1a',
+            border: '#262626',
+            accent: '#3b82f6',
+            accentHover: '#2563eb',
+            muted: '#737373',
+            tagBg: '#1e293b',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #0a0a0a; color: #e5e5e5; }
+
+    /* Hover skim simulation */
+    .clip-card .skim-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: #3b82f6;
+      width: 0%;
+      transition: none;
+    }
+    .clip-card:hover .skim-bar {
+      transition: none;
+    }
+    .clip-card .skim-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .clip-card:hover .skim-overlay {
+      opacity: 1;
+    }
+
+    /* Smooth thumbnail shift simulation */
+    .clip-card .thumb-container {
+      position: relative;
+      overflow: hidden;
+    }
+    .clip-card .thumb-strip {
+      display: flex;
+      transition: transform 0.05s linear;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #141414; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    /* Nav active state */
+    .nav-item.active {
+      background: #1a1a1a;
+      color: white;
+    }
+
+    /* Upload dropzone */
+    .dropzone {
+      border: 2px dashed #333;
+      transition: all 0.2s;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    /* Screen navigation */
+    .screen { display: none; }
+    .screen.active { display: flex; }
+
+    /* Download button animation */
+    .download-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div id="screen-login" class="screen active items-center justify-center min-h-screen">
+    <div class="w-full max-w-sm mx-auto px-6">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center gap-2 mb-2">
+          <svg class="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <h1 class="text-2xl font-bold text-white">FootageStore</h1>
+        </div>
+        <p class="text-muted text-sm">Sign in to access the footage library</p>
+      </div>
+      <div class="bg-surface rounded-xl p-6 border border-border">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-neutral-400 mb-1.5">Email</label>
+            <input type="email" placeholder="you@fraggell.com" value="editor@fraggell.com"
+              class="w-full px-3 py-2.5 bg-bg border border-border rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-accent text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-400 mb-1.5">Password</label>
+            <input type="password" placeholder="••••••••" value="password123"
+              class="w-full px-3 py-2.5 bg-bg border border-border rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-accent text-sm">
+          </div>
+          <button onclick="navigate('clients')"
+            class="w-full py-2.5 bg-accent hover:bg-accentHover text-white font-medium rounded-lg transition-colors text-sm">
+            Sign In
+          </button>
+        </div>
+      </div>
+      <p class="text-center text-muted text-xs mt-4">Fraggell Productions &middot; Internal Tool</p>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APP LAYOUT ==================== -->
+  <div id="app-layout" class="hidden min-h-screen">
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 bottom-0 w-56 bg-surface border-r border-border flex flex-col z-20">
+      <div class="p-4 border-b border-border">
+        <div class="flex items-center gap-2">
+          <svg class="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span class="font-bold text-white">FootageStore</span>
+        </div>
+      </div>
+
+      <nav class="flex-1 p-3 space-y-1">
+        <a onclick="navigate('clients')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-surfaceHover cursor-pointer" data-nav="clients">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+          Clients
+        </a>
+        <a onclick="navigate('clips')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-surfaceHover cursor-pointer" data-nav="clips">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>
+          All Clips
+        </a>
+
+        <div class="pt-4 pb-2">
+          <span class="px-3 text-xs font-semibold text-neutral-600 uppercase tracking-wider">Admin</span>
+        </div>
+        <a onclick="navigate('upload')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-surfaceHover cursor-pointer" data-nav="upload">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+          Upload
+        </a>
+        <a onclick="navigate('manage-clients')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-surfaceHover cursor-pointer" data-nav="manage-clients">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+          Manage Clients
+        </a>
+        <a onclick="navigate('users')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-surfaceHover cursor-pointer" data-nav="users">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+          Users
+        </a>
+      </nav>
+
+      <div class="p-3 border-t border-border">
+        <div class="flex items-center gap-3 px-3 py-2">
+          <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-medium">F</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-white truncate">Fraser</p>
+            <p class="text-xs text-muted truncate">Admin</p>
+          </div>
+          <button onclick="navigate('login')" class="text-muted hover:text-white">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content area -->
+    <main class="ml-56 min-h-screen">
+
+      <!-- ==================== CLIENTS GRID ==================== -->
+      <div id="screen-clients" class="screen p-8 flex-col">
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-white">Clients</h2>
+          <p class="text-sm text-muted mt-1">Browse footage by client</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <!-- Client cards -->
+          <div onclick="navigate('clips')" class="bg-surface border border-border rounded-xl p-5 hover:border-neutral-600 transition-colors cursor-pointer group">
+            <div class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
+              <span class="text-blue-400 font-bold text-lg">L</span>
+            </div>
+            <h3 class="font-semibold text-white group-hover:text-accent transition-colors">Leaf Shave</h3>
+            <p class="text-xs text-muted mt-1">47 clips</p>
+          </div>
+
+          <div onclick="navigate('clips')" class="bg-surface border border-border rounded-xl p-5 hover:border-neutral-600 transition-colors cursor-pointer group">
+            <div class="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
+              <span class="text-green-400 font-bold text-lg">H</span>
+            </div>
+            <h3 class="font-semibold text-white group-hover:text-accent transition-colors">Hexclad</h3>
+            <p class="text-xs text-muted mt-1">123 clips</p>
+          </div>
+
+          <div onclick="navigate('clips')" class="bg-surface border border-border rounded-xl p-5 hover:border-neutral-600 transition-colors cursor-pointer group">
+            <div class="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3">
+              <span class="text-purple-400 font-bold text-lg">O</span>
+            </div>
+            <h3 class="font-semibold text-white group-hover:text-accent transition-colors">Obvi</h3>
+            <p class="text-xs text-muted mt-1">89 clips</p>
+          </div>
+
+          <div onclick="navigate('clips')" class="bg-surface border border-border rounded-xl p-5 hover:border-neutral-600 transition-colors cursor-pointer group">
+            <div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-3">
+              <span class="text-orange-400 font-bold text-lg">J</span>
+            </div>
+            <h3 class="font-semibold text-white group-hover:text-accent transition-colors">Jolie</h3>
+            <p class="text-xs text-muted mt-1">64 clips</p>
+          </div>
+
+          <div onclick="navigate('clips')" class="bg-surface border border-border rounded-xl p-5 hover:border-neutral-600 transition-colors cursor-pointer group">
+            <div class="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center mb-3">
+              <span class="text-red-400 font-bold text-lg">B</span>
+            </div>
+            <h3 class="font-semibold text-white group-hover:text-accent transition-colors">BK Beauty</h3>
+            <p class="text-xs text-muted mt-1">31 clips</p>
+          </div>
+
+          <div onclick="navigate('clips')" class="bg-surface border border-border rounded-xl p-5 hover:border-neutral-600 transition-colors cursor-pointer group">
+            <div class="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-3">
+              <span class="text-cyan-400 font-bold text-lg">N</span>
+            </div>
+            <h3 class="font-semibold text-white group-hover:text-accent transition-colors">Native</h3>
+            <p class="text-xs text-muted mt-1">52 clips</p>
+          </div>
+
+          <div onclick="navigate('clips')" class="bg-surface border border-border rounded-xl p-5 hover:border-neutral-600 transition-colors cursor-pointer group">
+            <div class="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center mb-3">
+              <span class="text-yellow-400 font-bold text-lg">D</span>
+            </div>
+            <h3 class="font-semibold text-white group-hover:text-accent transition-colors">Dr. Squatch</h3>
+            <p class="text-xs text-muted mt-1">78 clips</p>
+          </div>
+
+          <div onclick="navigate('clips')" class="bg-surface border border-border rounded-xl p-5 hover:border-neutral-600 transition-colors cursor-pointer group">
+            <div class="w-12 h-12 rounded-lg bg-pink-500/10 flex items-center justify-center mb-3">
+              <span class="text-pink-400 font-bold text-lg">C</span>
+            </div>
+            <h3 class="font-semibold text-white group-hover:text-accent transition-colors">Coola</h3>
+            <p class="text-xs text-muted mt-1">36 clips</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== CLIPS GRID (for a client) ==================== -->
+      <div id="screen-clips" class="screen p-8 flex-col">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <button onclick="navigate('clients')" class="text-muted hover:text-white text-sm">&larr; Clients</button>
+              <span class="text-neutral-600">/</span>
+              <span class="text-sm text-white font-medium">Leaf Shave</span>
+            </div>
+            <h2 class="text-xl font-bold text-white">Leaf Shave</h2>
+            <p class="text-sm text-muted mt-0.5">47 clips &middot; 12.4 GB</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <input type="text" placeholder="Search clips..." class="pl-9 pr-4 py-2 bg-surface border border-border rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-accent w-64">
+            </div>
+          </div>
+        </div>
+
+        <!-- Clip grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="clip-grid">
+          <!-- Clips are generated by JS below -->
+        </div>
+      </div>
+
+      <!-- ==================== CLIP DETAIL MODAL ==================== -->
+      <div id="clip-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-8" onclick="closeModal(event)">
+        <div class="bg-surface border border-border rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+          <!-- Video preview area -->
+          <div class="aspect-video bg-black rounded-t-2xl relative flex items-center justify-center">
+            <div class="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-t-2xl"></div>
+            <svg class="w-16 h-16 text-white/30 relative z-10" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <div class="absolute top-4 right-4 z-10">
+              <button onclick="document.getElementById('clip-modal').classList.add('hidden'); document.getElementById('clip-modal').classList.remove('flex');"
+                class="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-bold text-white">Close-up shave scene</h3>
+                <p class="text-sm text-muted mt-0.5">Leaf Shave &middot; Uploaded Mar 15, 2026</p>
+              </div>
+              <button class="download-btn flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accentHover text-white font-medium rounded-lg transition-all text-sm">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Download Original
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="bg-bg rounded-lg p-3">
+                <p class="text-muted text-xs mb-1">Duration</p>
+                <p class="text-white font-medium">39.53s</p>
+              </div>
+              <div class="bg-bg rounded-lg p-3">
+                <p class="text-muted text-xs mb-1">Resolution</p>
+                <p class="text-white font-medium">3840 x 2160</p>
+              </div>
+              <div class="bg-bg rounded-lg p-3">
+                <p class="text-muted text-xs mb-1">File Size</p>
+                <p class="text-white font-medium">842 MB</p>
+              </div>
+              <div class="bg-bg rounded-lg p-3">
+                <p class="text-muted text-xs mb-1">Codec</p>
+                <p class="text-white font-medium">H.265 / HEVC</p>
+              </div>
+              <div class="bg-bg rounded-lg p-3">
+                <p class="text-muted text-xs mb-1">Frame Rate</p>
+                <p class="text-white font-medium">24 fps</p>
+              </div>
+              <div class="bg-bg rounded-lg p-3">
+                <p class="text-muted text-xs mb-1">Original Filename</p>
+                <p class="text-white font-medium truncate">A024_C003_0315CX.mov</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== UPLOAD PAGE ==================== -->
+      <div id="screen-upload" class="screen p-8 flex-col">
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-white">Upload Footage</h2>
+          <p class="text-sm text-muted mt-1">Upload video files and assign them to a client</p>
+        </div>
+
+        <div class="max-w-3xl">
+          <!-- Client selector -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-neutral-400 mb-2">Client</label>
+            <select class="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-white text-sm focus:outline-none focus:border-accent appearance-none cursor-pointer">
+              <option>Select a client...</option>
+              <option selected>Leaf Shave</option>
+              <option>Hexclad</option>
+              <option>Obvi</option>
+              <option>Jolie</option>
+              <option>BK Beauty</option>
+            </select>
+          </div>
+
+          <!-- Dropzone -->
+          <div class="dropzone rounded-xl p-12 text-center mb-6 cursor-pointer">
+            <svg class="w-12 h-12 text-muted mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p class="text-white font-medium mb-1">Drop video files here</p>
+            <p class="text-sm text-muted">or click to browse &middot; MP4, MOV, MKV, ProRes</p>
+          </div>
+
+          <!-- Upload queue (simulated) -->
+          <div class="space-y-3">
+            <h3 class="text-sm font-medium text-neutral-400">Upload Queue</h3>
+
+            <!-- File 1 - completed -->
+            <div class="bg-surface border border-border rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <div>
+                    <p class="text-sm text-white font-medium">A024_C003_0315CX.mov</p>
+                    <p class="text-xs text-muted">842 MB &middot; Processing complete</p>
+                  </div>
+                </div>
+                <span class="text-xs text-green-400 font-medium">Ready</span>
+              </div>
+              <div class="w-full h-1 bg-bg rounded-full overflow-hidden">
+                <div class="h-full bg-green-500 rounded-full" style="width: 100%"></div>
+              </div>
+            </div>
+
+            <!-- File 2 - processing -->
+            <div class="bg-surface border border-border rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <svg class="w-5 h-5 text-accent animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <div>
+                    <p class="text-sm text-white font-medium">A024_C004_0315CX.mov</p>
+                    <p class="text-xs text-muted">1.2 GB &middot; Generating thumbnails...</p>
+                  </div>
+                </div>
+                <span class="text-xs text-accent font-medium">Processing</span>
+              </div>
+              <div class="w-full h-1 bg-bg rounded-full overflow-hidden">
+                <div class="h-full bg-accent rounded-full transition-all" style="width: 65%"></div>
+              </div>
+            </div>
+
+            <!-- File 3 - uploading -->
+            <div class="bg-surface border border-border rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <svg class="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                  <div>
+                    <p class="text-sm text-white font-medium">B001_C001_0315CX.mov</p>
+                    <p class="text-xs text-muted">567 MB &middot; Uploading...</p>
+                  </div>
+                </div>
+                <span class="text-xs text-muted font-medium">34%</span>
+              </div>
+              <div class="w-full h-1 bg-bg rounded-full overflow-hidden">
+                <div class="h-full bg-neutral-500 rounded-full transition-all" style="width: 34%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== MANAGE CLIENTS ==================== -->
+      <div id="screen-manage-clients" class="screen p-8 flex-col">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white">Manage Clients</h2>
+            <p class="text-sm text-muted mt-1">Create and manage client accounts</p>
+          </div>
+          <button class="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accentHover text-white text-sm font-medium rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+            Add Client
+          </button>
+        </div>
+
+        <div class="bg-surface border border-border rounded-xl overflow-hidden max-w-3xl">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-border">
+                <th class="text-left py-3 px-4 text-xs font-semibold text-muted uppercase tracking-wider">Client</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold text-muted uppercase tracking-wider">Clips</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold text-muted uppercase tracking-wider">Storage</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold text-muted uppercase tracking-wider">Added</th>
+                <th class="py-3 px-4"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              <tr class="hover:bg-surfaceHover">
+                <td class="py-3 px-4 text-white font-medium">Leaf Shave</td>
+                <td class="py-3 px-4 text-muted">47</td>
+                <td class="py-3 px-4 text-muted">12.4 GB</td>
+                <td class="py-3 px-4 text-muted">Jan 12, 2026</td>
+                <td class="py-3 px-4 text-right">
+                  <button class="text-muted hover:text-white">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                  </button>
+                </td>
+              </tr>
+              <tr class="hover:bg-surfaceHover">
+                <td class="py-3 px-4 text-white font-medium">Hexclad</td>
+                <td class="py-3 px-4 text-muted">123</td>
+                <td class="py-3 px-4 text-muted">34.1 GB</td>
+                <td class="py-3 px-4 text-muted">Feb 3, 2026</td>
+                <td class="py-3 px-4 text-right">
+                  <button class="text-muted hover:text-white">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                  </button>
+                </td>
+              </tr>
+              <tr class="hover:bg-surfaceHover">
+                <td class="py-3 px-4 text-white font-medium">Obvi</td>
+                <td class="py-3 px-4 text-muted">89</td>
+                <td class="py-3 px-4 text-muted">21.7 GB</td>
+                <td class="py-3 px-4 text-muted">Feb 15, 2026</td>
+                <td class="py-3 px-4 text-right">
+                  <button class="text-muted hover:text-white">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                  </button>
+                </td>
+              </tr>
+              <tr class="hover:bg-surfaceHover">
+                <td class="py-3 px-4 text-white font-medium">Jolie</td>
+                <td class="py-3 px-4 text-muted">64</td>
+                <td class="py-3 px-4 text-muted">15.8 GB</td>
+                <td class="py-3 px-4 text-muted">Mar 1, 2026</td>
+                <td class="py-3 px-4 text-right">
+                  <button class="text-muted hover:text-white">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==================== USERS PAGE ==================== -->
+      <div id="screen-users" class="screen p-8 flex-col">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white">Users</h2>
+            <p class="text-sm text-muted mt-1">Manage who can access FootageStore</p>
+          </div>
+          <button class="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accentHover text-white text-sm font-medium rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+            Invite User
+          </button>
+        </div>
+
+        <div class="bg-surface border border-border rounded-xl overflow-hidden max-w-3xl">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-border">
+                <th class="text-left py-3 px-4 text-xs font-semibold text-muted uppercase tracking-wider">User</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold text-muted uppercase tracking-wider">Role</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold text-muted uppercase tracking-wider">Last Active</th>
+                <th class="py-3 px-4"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              <tr class="hover:bg-surfaceHover">
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-xs font-medium">F</div>
+                    <div>
+                      <p class="text-white font-medium">Fraser</p>
+                      <p class="text-xs text-muted">fraser@fraggell.com</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-4"><span class="px-2 py-0.5 bg-accent/10 text-accent text-xs rounded-full font-medium">Admin</span></td>
+                <td class="py-3 px-4 text-muted">Just now</td>
+                <td class="py-3 px-4"></td>
+              </tr>
+              <tr class="hover:bg-surfaceHover">
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-xs font-medium">M</div>
+                    <div>
+                      <p class="text-white font-medium">Mike Chen</p>
+                      <p class="text-xs text-muted">mike@fraggell.com</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-4"><span class="px-2 py-0.5 bg-neutral-800 text-neutral-400 text-xs rounded-full font-medium">Editor</span></td>
+                <td class="py-3 px-4 text-muted">2 hours ago</td>
+                <td class="py-3 px-4 text-right">
+                  <button class="text-muted hover:text-white">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                  </button>
+                </td>
+              </tr>
+              <tr class="hover:bg-surfaceHover">
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-medium">S</div>
+                    <div>
+                      <p class="text-white font-medium">Sarah Lee</p>
+                      <p class="text-xs text-muted">sarah@fraggell.com</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-4"><span class="px-2 py-0.5 bg-neutral-800 text-neutral-400 text-xs rounded-full font-medium">Editor</span></td>
+                <td class="py-3 px-4 text-muted">Yesterday</td>
+                <td class="py-3 px-4 text-right">
+                  <button class="text-muted hover:text-white">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                  </button>
+                </td>
+              </tr>
+              <tr class="hover:bg-surfaceHover">
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 text-xs font-medium">J</div>
+                    <div>
+                      <p class="text-white font-medium">Jake Torres</p>
+                      <p class="text-xs text-muted">jake@fraggell.com</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-4"><span class="px-2 py-0.5 bg-neutral-800 text-neutral-400 text-xs rounded-full font-medium">Editor</span></td>
+                <td class="py-3 px-4 text-muted">3 days ago</td>
+                <td class="py-3 px-4 text-right">
+                  <button class="text-muted hover:text-white">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    // ==================== CLIP DATA ====================
+    const clipData = [
+      { name: 'Close-up shave scene', duration: '39.53s', hue: 25 },
+      { name: 'Razor on red backdrop', duration: '39.03s', hue: 0 },
+      { name: 'Clapperboard insert', duration: '51.55s', hue: 40 },
+      { name: 'Shaving cream bathroom', duration: '23.79s', hue: 200 },
+      { name: 'Product reveal on marble', duration: '18.22s', hue: 120 },
+      { name: 'Customer testimonial - Mark', duration: '45.10s', hue: 280 },
+      { name: 'Slow-mo shave hero', duration: '12.88s', hue: 180 },
+      { name: 'Morning routine montage', duration: '31.44s', hue: 60 },
+      { name: 'Unboxing reaction', duration: '28.67s', hue: 310 },
+      { name: 'Packaging close-up', duration: '15.90s', hue: 150 },
+      { name: 'Water splashing slow-mo', duration: '42.33s', hue: 90 },
+      { name: 'Customer testimonial - Fiona', duration: '55.21s', hue: 220 },
+      { name: 'Product drop hero', duration: '8.75s', hue: 340 },
+      { name: 'Gym prep lifestyle', duration: '35.12s', hue: 50 },
+      { name: 'Unboxing first impressions', duration: '22.50s', hue: 190 },
+      { name: 'Blade macro detail', duration: '19.80s', hue: 270 },
+    ];
+
+    // ==================== RENDER CLIPS ====================
+    function renderClips() {
+      const grid = document.getElementById('clip-grid');
+      grid.innerHTML = clipData.map((clip, i) => `
+        <div class="clip-card bg-surface border border-border rounded-xl overflow-hidden cursor-pointer hover:border-neutral-600 transition-colors group"
+             onclick="openModal('${clip.name}')"
+             onmouseenter="startSkim(this)"
+             onmouseleave="stopSkim(this)"
+             onmousemove="updateSkim(event, this)">
+          <!-- Thumbnail area -->
+          <div class="thumb-container aspect-video relative">
+            <!-- Placeholder gradient thumbnail -->
+            <div class="absolute inset-0" style="background: linear-gradient(${135 + i * 20}deg, hsl(${clip.hue}, 30%, 20%), hsl(${clip.hue + 40}, 40%, 15%))"></div>
+
+            <!-- Skim frame overlay (simulated with hue shift) -->
+            <div class="skim-overlay absolute inset-0" data-base-hue="${clip.hue}"></div>
+
+            <!-- Progress bar -->
+            <div class="skim-bar"></div>
+
+            <!-- Duration -->
+            <div class="absolute top-2 right-2 z-10">
+              <span class="px-1.5 py-0.5 bg-black/60 backdrop-blur-sm rounded text-xs text-white/80">${clip.duration}</span>
+            </div>
+
+            <!-- Download button (visible on hover) -->
+            <div class="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onclick="event.stopPropagation();" class="w-8 h-8 rounded-full bg-accent hover:bg-accentHover flex items-center justify-center text-white shadow-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Clip name -->
+          <div class="px-3 py-2.5">
+            <p class="text-sm text-neutral-300 truncate">${clip.name}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ==================== HOVER SKIM SIMULATION ====================
+    function startSkim(card) {
+      card.dataset.skimming = 'true';
+    }
+
+    function stopSkim(card) {
+      card.dataset.skimming = 'false';
+      const overlay = card.querySelector('.skim-overlay');
+      const bar = card.querySelector('.skim-bar');
+      overlay.style.background = 'transparent';
+      bar.style.width = '0%';
+    }
+
+    function updateSkim(event, card) {
+      if (card.dataset.skimming !== 'true') return;
+
+      const rect = card.querySelector('.thumb-container').getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const percent = Math.max(0, Math.min(1, x / rect.width));
+
+      // Simulate frame change with hue shift
+      const baseHue = parseInt(card.querySelector('.skim-overlay').dataset.baseHue);
+      const hueShift = percent * 60 - 30;
+      const brightness = 15 + percent * 10;
+      const overlay = card.querySelector('.skim-overlay');
+      overlay.style.background = `linear-gradient(${135 + percent * 90}deg, hsl(${baseHue + hueShift}, 35%, ${brightness}%), hsl(${baseHue + hueShift + 40}, 45%, ${brightness - 3}%))`;
+
+      // Update progress bar
+      const bar = card.querySelector('.skim-bar');
+      bar.style.width = `${percent * 100}%`;
+    }
+
+    // ==================== MODAL ====================
+    function openModal(clipCode) {
+      const modal = document.getElementById('clip-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal(event) {
+      if (event.target === event.currentTarget) {
+        event.currentTarget.classList.add('hidden');
+        event.currentTarget.classList.remove('flex');
+      }
+    }
+
+    // ==================== NAVIGATION ====================
+    function navigate(screen) {
+      // Hide all screens
+      document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+      });
+
+      // Update nav active states
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+      if (screen === 'login') {
+        document.getElementById('app-layout').classList.add('hidden');
+        document.getElementById('screen-login').classList.add('active');
+        return;
+      }
+
+      // Show app layout
+      document.getElementById('app-layout').classList.remove('hidden');
+      document.getElementById('screen-login').classList.remove('active');
+
+      // Show target screen
+      const target = document.getElementById(`screen-${screen}`);
+      if (target) {
+        target.classList.add('active');
+      }
+
+      // Set nav active
+      const navItem = document.querySelector(`[data-nav="${screen}"]`);
+      if (navItem) navItem.classList.add('active');
+    }
+
+    // ==================== INIT ====================
+    renderClips();
+
+    // Close modal on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('clip-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    });
+  </script>
+
+
+</body>
+</html>

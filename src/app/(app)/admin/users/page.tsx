@@ -1,0 +1,260 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  lastActiveAt: string | null;
+  createdAt: string;
+}
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "Never";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatRelative(dateStr: string | null): string {
+  if (!dateStr) return "Never";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return formatDate(dateStr);
+}
+
+export default function UsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteRole, setInviteRole] = useState("viewer");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("/api/users");
+      if (!res.ok) return;
+      const data = await res.json();
+      setUsers(data.users || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim() || !inviteName.trim()) return;
+
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: inviteEmail.trim(),
+          name: inviteName.trim(),
+          role: inviteRole,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to invite user");
+      }
+
+      setInviteEmail("");
+      setInviteName("");
+      setInviteRole("viewer");
+      setShowInvite(false);
+      fetchUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to invite user");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const roleBadge = (role: string) => {
+    const styles: Record<string, string> = {
+      admin: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      editor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+      viewer: "bg-neutral-500/10 text-neutral-400 border-neutral-500/20",
+    };
+    return (
+      <span
+        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border capitalize ${
+          styles[role] || styles.viewer
+        }`}
+      >
+        {role}
+      </span>
+    );
+  };
+
+  return (
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Users</h1>
+          <p className="text-muted text-sm mt-1">
+            {users.length} user{users.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowInvite(!showInvite)}
+          className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          Invite User
+        </button>
+      </div>
+
+      {showInvite && (
+        <form
+          onSubmit={handleInvite}
+          className="bg-surface border border-border rounded-xl p-4 mb-6 space-y-4"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">
+                Name
+              </label>
+              <input
+                type="text"
+                value={inviteName}
+                onChange={(e) => setInviteName(e.target.value)}
+                placeholder="Full name"
+                className="bg-bg border border-border rounded-lg px-4 py-2 text-sm text-white placeholder-muted focus:outline-none focus:border-accent w-full"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">
+                Email
+              </label>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="email@example.com"
+                className="bg-bg border border-border rounded-lg px-4 py-2 text-sm text-white placeholder-muted focus:outline-none focus:border-accent w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">
+                Role
+              </label>
+              <select
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+                className="bg-bg border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-accent w-full appearance-none"
+              >
+                <option value="viewer">Viewer</option>
+                <option value="editor">Editor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          {error && <p className="text-red-400 text-xs">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowInvite(false);
+                setError("");
+              }}
+              className="px-4 py-2 text-sm text-muted hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !inviteEmail.trim() || !inviteName.trim()}
+              className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {submitting ? "Inviting..." : "Send Invite"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="animate-pulse space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-14 bg-surface rounded-lg" />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-5 py-3">
+                  Name
+                </th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-5 py-3">
+                  Email
+                </th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-5 py-3">
+                  Role
+                </th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-5 py-3">
+                  Last Active
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {users.map((user) => (
+                <tr key={user.id} className="hover:bg-surface-hover transition-colors">
+                  <td className="px-5 py-3.5">
+                    <span className="text-sm text-white font-medium">{user.name}</span>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <span className="text-sm text-neutral-300">{user.email}</span>
+                  </td>
+                  <td className="px-5 py-3.5">{roleBadge(user.role)}</td>
+                  <td className="px-5 py-3.5">
+                    <span className="text-sm text-neutral-300">
+                      {formatRelative(user.lastActiveAt)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-10 text-center text-muted text-sm">
+                    No users found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #0a0a0a;
+  --color-surface: #141414;
+  --color-surface-hover: #1a1a1a;
+  --color-border: #262626;
+  --color-accent: #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-muted: #737373;
+}
+
+body {
+  background: var(--color-bg);
+  color: #e5e5e5;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #141414; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+.clip-card .skim-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #3b82f6;
+  width: 0%;
+}
+
+.clip-card .skim-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.clip-card:hover .skim-overlay {
+  opacity: 1;
+}

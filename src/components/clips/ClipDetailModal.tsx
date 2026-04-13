@@ -1,0 +1,162 @@
+"use client";
+
+import { useEffect, useCallback } from "react";
+
+interface Clip {
+  id: string;
+  name: string;
+  clientId: string;
+  clientName: string;
+  duration: number;
+  width: number;
+  height: number;
+  fileSizeBytes: number;
+  codec: string;
+  fps: number;
+  originalFilename: string;
+  uploadedAt: string;
+  hasThumbnail: boolean;
+  hasSpriteSheet: boolean;
+}
+
+interface ClipDetailModalProps {
+  clip: Clip;
+  onClose: () => void;
+}
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export default function ClipDetailModal({ clip, onClose }: ClipDetailModalProps) {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [handleKeyDown]);
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  const thumbnailUrl = clip.hasThumbnail
+    ? `/api/assets/${clip.id}/thumbnail.jpg`
+    : null;
+
+  const metadataItems = [
+    { label: "Duration", value: formatDuration(clip.duration) },
+    { label: "Resolution", value: `${clip.width} x ${clip.height}` },
+    { label: "File Size", value: formatBytes(clip.fileSizeBytes) },
+    { label: "Codec", value: clip.codec || "-" },
+    { label: "FPS", value: clip.fps ? `${clip.fps}` : "-" },
+    { label: "Original Filename", value: clip.originalFilename || "-" },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-surface border border-border rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto mx-4">
+        {/* Close button */}
+        <div className="flex justify-end p-4 pb-0">
+          <button
+            onClick={onClose}
+            className="text-muted hover:text-white transition-colors p-1"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Video preview area */}
+        <div className="px-6">
+          <div className="relative aspect-video rounded-lg overflow-hidden bg-bg border border-border">
+            {thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt={clip.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-neutral-900" />
+            )}
+            {/* Play icon overlay */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center border border-white/20">
+                <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Info section */}
+        <div className="p-6 space-y-5">
+          <div>
+            <h2 className="text-xl font-bold text-white">{clip.name}</h2>
+            <div className="flex items-center gap-3 mt-1.5 text-sm text-muted">
+              <span>{clip.clientName}</span>
+              <span className="text-border">&middot;</span>
+              <span>{formatDate(clip.uploadedAt)}</span>
+            </div>
+          </div>
+
+          {/* Download button */}
+          <a
+            href={`/api/clips/${clip.id}/download`}
+            className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download Original
+          </a>
+
+          {/* Metadata grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
+            {metadataItems.map((item) => (
+              <div key={item.label}>
+                <p className="text-xs text-muted uppercase tracking-wider mb-1">
+                  {item.label}
+                </p>
+                <p className="text-sm text-white break-all">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

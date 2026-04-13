@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+RUN apk add --no-cache ffmpeg
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# Copy worker files
+COPY worker ./worker
+
+# Copy shared lib files the worker depends on
+COPY src/lib ./src/lib
+
+# Copy TypeScript configs
+COPY tsconfig.json ./
+
+# Install tsx for running TypeScript directly
+RUN npm install -g tsx
+
+CMD ["tsx", "worker/index.ts"]
