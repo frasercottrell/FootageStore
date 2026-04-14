@@ -84,10 +84,11 @@ export default function ClipCard({ clip, onSelect }: ClipCardProps) {
       className="clip-card bg-surface border border-border rounded-xl overflow-hidden cursor-pointer hover:border-neutral-600 transition-all group hover:shadow-lg hover:shadow-black/20"
       onClick={() => onSelect(clip)}
     >
-      {/* Thumbnail area — fixed 16:9 for all clips */}
+      {/* Thumbnail area — 4:5 works for both portrait and landscape */}
       <div
         ref={containerRef}
-        className="relative overflow-hidden aspect-video"
+        className="relative overflow-hidden"
+        style={{ aspectRatio: "4/5" }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
@@ -96,7 +97,7 @@ export default function ClipCard({ clip, onSelect }: ClipCardProps) {
           <img
             src={`/api/assets/${clip.id}/thumbnail.jpg`}
             alt={clip.name || clip.originalFilename}
-            className={`absolute inset-0 w-full h-full ${isPortrait ? "object-contain bg-black" : "object-cover"}`}
+            className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
           />
         ) : (
@@ -118,15 +119,6 @@ export default function ClipCard({ clip, onSelect }: ClipCardProps) {
             className="absolute bottom-0 left-0 h-[3px] bg-accent z-10"
             style={{ width: `${skimPercent * 100}%` }}
           />
-        )}
-
-        {/* Portrait badge */}
-        {isPortrait && (
-          <div className="absolute top-2 left-2 z-10">
-            <span className="px-1.5 py-0.5 bg-black/60 backdrop-blur-sm rounded text-[10px] text-white/70 font-medium">
-              9:16
-            </span>
-          </div>
         )}
 
         {/* Duration badge */}
