@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ClipGrid from "@/components/clips/ClipGrid";
@@ -33,6 +33,104 @@ interface Clip {
   shotType?: string | null;
   tags?: string[] | null;
   productSkus?: string[] | null;
+}
+
+function FilterDropdown({
+  label,
+  options,
+  selected,
+  onToggle,
+  singleSelect,
+  accentColor,
+}: {
+  label: string;
+  options: [string, number][];
+  selected: Set<string>;
+  onToggle: (val: string) => void;
+  singleSelect?: boolean;
+  accentColor?: "emerald";
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const activeCount = selected.size;
+  const activeBg = accentColor === "emerald" ? "bg-emerald-500" : "bg-accent";
+  const activeHover = accentColor === "emerald" ? "hover:bg-emerald-600" : "hover:bg-accent-hover";
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+          activeCount > 0
+            ? `${activeBg} text-white border-transparent`
+            : "bg-surface border-border text-neutral-400 hover:text-white hover:border-neutral-600"
+        }`}
+      >
+        {label}
+        {activeCount > 0 && (
+          <span className="bg-white/20 rounded-full px-1.5 py-0.5 text-[10px] leading-none">
+            {activeCount}
+          </span>
+        )}
+        <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 z-30 bg-[#252525] border border-white/10 rounded-xl shadow-xl py-1.5 min-w-[180px] max-h-[320px] overflow-y-auto">
+          {singleSelect && (
+            <button
+              onClick={() => { onToggle(""); setOpen(false); }}
+              className={`w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between ${
+                selected.size === 0 ? "text-white bg-white/5" : "text-neutral-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              All
+              {selected.size === 0 && (
+                <svg className="w-3 h-3 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+          )}
+          {options.map(([value, count]) => {
+            const isActive = selected.has(value);
+            return (
+              <button
+                key={value}
+                onClick={() => {
+                  onToggle(value);
+                  if (singleSelect) setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between gap-3 ${
+                  isActive ? "text-white bg-white/5" : "text-neutral-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <span className="truncate">{value}</span>
+                <span className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-neutral-600">{count}</span>
+                  {isActive && (
+                    <svg className={`w-3 h-3 ${accentColor === "emerald" ? "text-emerald-400" : "text-accent"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function formatBytes(bytes: number): string {
@@ -325,90 +423,56 @@ export default function ClientDetailPage() {
 
         {/* Filters */}
         {(shotTypes.length > 0 || allTags.length > 0 || allSkus.length > 0) && (
-          <div className="mt-4 space-y-3">
-            {/* Shot type row */}
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            {/* Shot type dropdown */}
             {shotTypes.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] text-muted uppercase tracking-wider w-16 flex-shrink-0">Shot</span>
-                <button
-                  onClick={() => setSelectedShotType(null)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    selectedShotType === null
-                      ? "bg-accent text-white"
-                      : "bg-surface border border-border text-neutral-400 hover:text-white hover:border-neutral-600"
-                  }`}
-                >
-                  All
-                </button>
-                {shotTypes.map(([type, count]) => (
-                  <button
-                    key={type}
-                    onClick={() =>
-                      setSelectedShotType(selectedShotType === type ? null : type)
-                    }
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      selectedShotType === type
-                        ? "bg-accent text-white"
-                        : "bg-surface border border-border text-neutral-400 hover:text-white hover:border-neutral-600"
-                    }`}
-                  >
-                    {type}
-                    <span className="ml-1 opacity-60">{count}</span>
-                  </button>
-                ))}
-              </div>
+              <FilterDropdown
+                label="Shot"
+                options={shotTypes}
+                selected={selectedShotType ? new Set([selectedShotType]) : new Set()}
+                onToggle={(val) => setSelectedShotType(selectedShotType === val ? null : val)}
+                singleSelect
+              />
             )}
 
-            {/* Tags row */}
+            {/* Tags dropdown */}
             {allTags.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] text-muted uppercase tracking-wider w-16 flex-shrink-0">Tags</span>
-                {allTags.map(([tag, count]) => (
-                  <button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      selectedTags.has(tag)
-                        ? "bg-accent text-white"
-                        : "bg-surface border border-border text-neutral-400 hover:text-white hover:border-neutral-600"
-                    }`}
-                  >
-                    {tag}
-                    <span className="ml-1 opacity-60">{count}</span>
-                  </button>
-                ))}
-              </div>
+              <FilterDropdown
+                label="Tags"
+                options={allTags}
+                selected={selectedTags}
+                onToggle={toggleTag}
+              />
             )}
 
-            {/* SKUs row */}
+            {/* SKUs dropdown */}
             {allSkus.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] text-muted uppercase tracking-wider w-16 flex-shrink-0">SKU</span>
-                {allSkus.map(([sku, count]) => (
-                  <button
-                    key={sku}
-                    onClick={() => toggleSku(sku)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      selectedSkus.has(sku)
-                        ? "bg-emerald-500 text-white"
-                        : "bg-surface border border-border text-neutral-400 hover:text-white hover:border-neutral-600"
-                    }`}
-                  >
-                    {sku}
-                    <span className="ml-1 opacity-60">{count}</span>
-                  </button>
-                ))}
-              </div>
+              <FilterDropdown
+                label="SKU"
+                options={allSkus}
+                selected={selectedSkus}
+                onToggle={toggleSku}
+                accentColor="emerald"
+              />
             )}
 
-            {/* Active filter count & clear */}
+            {/* Active filters & clear */}
             {(selectedShotType || selectedTags.size > 0 || selectedSkus.size > 0) && (
-              <button
-                onClick={clearFilters}
-                className="text-xs text-accent hover:text-accent-hover transition-colors"
-              >
-                Clear filters
-              </button>
+              <>
+                <span className="text-xs text-muted ml-1">
+                  {[
+                    selectedShotType && `Shot: ${selectedShotType}`,
+                    selectedTags.size > 0 && `${selectedTags.size} tag${selectedTags.size > 1 ? "s" : ""}`,
+                    selectedSkus.size > 0 && `${selectedSkus.size} SKU${selectedSkus.size > 1 ? "s" : ""}`,
+                  ].filter(Boolean).join(" + ")}
+                </span>
+                <button
+                  onClick={clearFilters}
+                  className="text-xs text-accent hover:text-accent-hover transition-colors"
+                >
+                  Clear
+                </button>
+              </>
             )}
           </div>
         )}
