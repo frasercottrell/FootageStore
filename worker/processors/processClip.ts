@@ -74,14 +74,17 @@ export async function processClip(data: JobData): Promise<void> {
     const vttPath = getWebVTTPath(clipId);
     await generateSpriteSheet(inputPath, spritePath, vttPath, metadata.duration, metadata.width, metadata.height);
 
-    // 5. Generate AI clip name
-    console.log(`[processClip] Generating AI clip name for ${clipId}`);
+    // 5. Generate AI scene analysis (name + description)
+    console.log(`[processClip] Analyzing scene for ${clipId}`);
     let clipName: string;
+    let clipDescription: string | null = null;
     try {
-      clipName = await generateClipName(inputPath, metadata.duration, clipId);
+      const analysis = await generateClipName(inputPath, metadata.duration, clipId);
+      clipName = analysis.name;
+      clipDescription = analysis.description;
     } catch (err) {
       console.warn(
-        `[processClip] AI naming failed for ${clipId}, using filename:`,
+        `[processClip] AI analysis failed for ${clipId}, using filename:`,
         (err as Error).message
       );
       clipName = clip.originalFilename.replace(/\.[^.]+$/, "");
@@ -92,6 +95,7 @@ export async function processClip(data: JobData): Promise<void> {
       .update(clips)
       .set({
         name: clipName,
+        description: clipDescription,
         thumbnailPath,
         spriteSheetPath: spritePath,
         webvttPath: vttPath,

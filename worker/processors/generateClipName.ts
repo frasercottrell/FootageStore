@@ -6,28 +6,39 @@ import { ensureDir } from "../../src/lib/storage";
 
 const anthropic = new Anthropic();
 
+const FRAME_COUNT = 12;
+
+interface SceneAnalysis {
+  name: string;
+  description: string;
+}
+
 export async function generateClipName(
   inputPath: string,
   duration: number,
   clipId: string
-): Promise<string> {
-  const tmpDir = path.join("/tmp", `clip-name-${clipId}`);
+): Promise<SceneAnalysis> {
+  const tmpDir = path.join("/tmp", `clip-analysis-${clipId}`);
   await ensureDir(tmpDir);
 
-  const timepoints = [0.25, 0.5, 0.75].map((pct) => pct * duration);
+  // Extract 12 frames evenly spaced through the clip
+  const timepoints = Array.from({ length: FRAME_COUNT }, (_, i) => {
+    const pct = (i + 0.5) / FRAME_COUNT;
+    return pct * duration;
+  });
+
   const framePaths: string[] = [];
 
   try {
-    // Extract 3 frames at 25%, 50%, and 75% of the clip
     for (let i = 0; i < timepoints.length; i++) {
-      const framePath = path.join(tmpDir, `frame_${i}.jpg`);
+      const framePath = path.join(tmpDir, `frame_${i.toString().padStart(2, "0")}.jpg`);
       framePaths.push(framePath);
 
       await new Promise<void>((resolve, reject) => {
         ffmpeg(inputPath)
           .seekInput(timepoints[i])
           .frames(1)
-          .outputOptions(["-q:v", "2"])
+          .outputOptions(["-vf", "scale=720:-1", "-q:v", "3"])
           .output(framePath)
           .on("end", () => resolve())
           .on("error", (err) =>
@@ -53,7 +64,7 @@ export async function generateClipName(
 
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 100,
+      max_tokens: 500,
       messages: [
         {
           role: "user",
@@ -61,7 +72,24 @@ export async function generateClipName(
             ...imageContents,
             {
               type: "text",
-              text: "These are 3 frames from a video clip (at 25%, 50%, and 75% through). Describe what's happening in this video clip in 3-6 words. Be specific and concise. Examples: 'Close-up shave scene', 'Product on marble counter', 'Woman applying sunscreen'. Respond with ONLY the description, nothing else.",
+              text: `These are ${FRAME_COUNT} frames extracted in sequence from a video clip (evenly spaced from start to end). Analyze the full sequence as if you're watching the video.
+
+Respond in EXACTLY this format:
+
+TITLE: [3-8 word descriptive title]
+DESCRIPTION: [Detailed paragraph describing the scene]
+
+For the DESCRIPTION, include:
+- What subjects/people are doing (actions, movements, gestures)
+- Objects, products, or items visible and how they're used
+- Camera movement (pan, zoom, static, tracking, close-up, wide shot)
+- Scene transitions or changes throughout the clip
+- Setting/environment (studio, outdoor, kitchen, bathroom, etc.)
+- Lighting and mood (natural, studio, warm, bright, moody)
+- Any text, branding, or logos visible
+- Style of footage (UGC, professional, testimonial, product demo, lifestyle, b-roll)
+
+Write naturally — this description will be used for search, so use the kind of words someone would type when looking for this footage.`,
             },
           ],
         },
@@ -69,7 +97,16 @@ export async function generateClipName(
     });
 
     const textBlock = response.content.find((b) => b.type === "text");
-    return textBlock?.text?.trim() ?? "Untitled Clip";
+    const text = textBlock?.text?.trim() ?? "";
+
+    // Parse the response
+    const titleMatch = text.match(/TITLE:\s*(.+)/i);
+    const descMatch = text.match(/DESCRIPTION:\s*([\s\S]+)/i);
+
+    const name = titleMatch?.[1]?.trim() ?? "Untitled Clip";
+    const description = descMatch?.[1]?.trim() ?? text;
+
+    return { name, description };
   } finally {
     // Clean up temp files
     for (const fp of framePaths) {

@@ -40,7 +40,8 @@ export const clips = pgTable("clips", {
   clientId: uuid("client_id")
     .notNull()
     .references(() => clients.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 500 }), // AI-generated description
+  name: varchar("name", { length: 500 }), // AI-generated short title
+  description: text("description"), // AI-generated detailed scene description for search
   originalFilename: varchar("original_filename", { length: 500 }).notNull(),
   mimeType: varchar("mime_type", { length: 100 }).notNull(),
   fileSize: integer("file_size").notNull(), // bytes
