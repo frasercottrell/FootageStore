@@ -43,10 +43,18 @@ export async function POST(request: NextRequest) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-  const [client] = await db
-    .insert(clients)
-    .values({ name: name.trim(), slug })
-    .returning();
+  try {
+    const [client] = await db
+      .insert(clients)
+      .values({ name: name.trim(), slug })
+      .returning();
 
-  return NextResponse.json(client, { status: 201 });
+    return NextResponse.json(client, { status: 201 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    if (message.includes("unique") || message.includes("duplicate")) {
+      return NextResponse.json({ error: "A client with that name already exists" }, { status: 409 });
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
