@@ -40,8 +40,6 @@ export async function processClip(data: JobData): Promise<void> {
       throw new Error(`Clip not found: ${clipId}`);
     }
 
-    const inputPath = clip.originalPath;
-
     // Update status to processing
     await db
       .update(clips)
@@ -51,6 +49,26 @@ export async function processClip(data: JobData): Promise<void> {
     // Ensure processed directory exists
     const processedDir = getProcessedDir(clipId);
     await ensureDir(processedDir);
+
+    // If the file is on Google Drive, download it to a temp local path for FFmpeg
+    let inputPath = clip.originalPath;
+    let tempDownloaded = false;
+
+    if (clip.driveFileId && clip.originalPath.startsWith("gdrive://")) {
+      console.log(`[processClip] Downloading ${clipId} from Google Drive...`);
+      const { downloadFileFromDrive } = await import("../../src/lib/gdrive");
+      const ext = clip.originalFilename.match(/\.[^.]+$/)?.[0] || ".mp4";
+      inputPath = `${processedDir}/temp_original${ext}`;
+      const driveStream = await downloadFileFromDrive(clip.driveFileId);
+      const writeStream = fs.createWriteStream(inputPath);
+      await new Promise<void>((resolve, reject) => {
+        driveStream.pipe(writeStream);
+        writeStream.on("finish", resolve);
+        writeStream.on("error", reject);
+      });
+      tempDownloaded = true;
+      console.log(`[processClip] Downloaded from Drive to ${inputPath}`);
+    }
 
     // 2. Extract metadata
     console.log(`[processClip] Extracting metadata for ${clipId}`);
@@ -94,34 +112,40 @@ export async function processClip(data: JobData): Promise<void> {
       clipName = clip.originalFilename.replace(/\.[^.]+$/, "");
     }
 
-    // 6. Upload original to Google Drive
-    let driveFileId: string | null = null;
-    try {
-      // Look up the client's Drive folder ID
-      const [client] = await db
-        .select({ driveFolderId: clients.driveFolderId })
-        .from(clients)
-        .where(eq(clients.id, clip.clientId))
-        .limit(1);
+    // 6. Handle Drive upload / cleanup
+    let driveFileId: string | null = clip.driveFileId || null;
 
-      if (client?.driveFolderId) {
-        console.log(`[processClip] Uploading ${clipId} to Google Drive...`);
-        const fileStream = fs.createReadStream(inputPath);
-        driveFileId = await uploadFileToDrive(
-          client.driveFolderId,
-          clip.originalFilename,
-          clip.mimeType,
-          fileStream
-        );
-        console.log(`[processClip] Uploaded to Drive: ${driveFileId}`);
+    if (!driveFileId) {
+      // File was uploaded via old local flow — upload to Drive now
+      try {
+        const [client] = await db
+          .select({ driveFolderId: clients.driveFolderId })
+          .from(clients)
+          .where(eq(clients.id, clip.clientId))
+          .limit(1);
 
-        // Clean up local original file (keep processed assets locally for fast serving)
-        const originalDir = getOriginalDir(clip.clientId, clipId);
-        await fsPromises.rm(originalDir, { recursive: true, force: true }).catch(() => {});
+        if (client?.driveFolderId) {
+          console.log(`[processClip] Uploading ${clipId} to Google Drive...`);
+          const fileStream = fs.createReadStream(inputPath);
+          driveFileId = await uploadFileToDrive(
+            client.driveFolderId,
+            clip.originalFilename,
+            clip.mimeType,
+            fileStream
+          );
+          console.log(`[processClip] Uploaded to Drive: ${driveFileId}`);
+        }
+      } catch (driveErr) {
+        console.error(`[processClip] Drive upload failed for ${clipId}:`, (driveErr as Error).message);
       }
-    } catch (driveErr) {
-      console.error(`[processClip] Drive upload failed for ${clipId}:`, (driveErr as Error).message);
-      // Continue — clip is still usable, just won't be on Drive
+    }
+
+    // Clean up local original / temp file
+    if (tempDownloaded) {
+      await fsPromises.unlink(inputPath).catch(() => {});
+    } else {
+      const originalDir = getOriginalDir(clip.clientId, clipId);
+      await fsPromises.rm(originalDir, { recursive: true, force: true }).catch(() => {});
     }
 
     // 7. Update clip to ready

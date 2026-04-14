@@ -71,40 +71,55 @@ export default function UploadPage() {
         );
 
         try {
-          const formData = new FormData();
-          formData.append("file", item.file);
-          formData.append("clientId", selectedClientId);
-
-          const xhr = new XMLHttpRequest();
-          xhr.open("POST", "/api/upload");
-
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              const pct = Math.round((e.loaded / e.total) * 100);
-              setQueue((q) =>
-                q.map((i) => (i.id === item.id ? { ...i, progress: pct } : i))
-              );
-            }
-          };
-
-          await new Promise<void>((resolve, reject) => {
-            xhr.onload = () => {
-              if (xhr.status >= 200 && xhr.status < 300) {
-                setQueue((q) =>
-                  q.map((i) =>
-                    i.id === item.id
-                      ? { ...i, progress: 100, status: "complete" }
-                      : i
-                  )
-                );
-                resolve();
-              } else {
-                reject(new Error(`Upload failed: ${xhr.status}`));
-              }
-            };
-            xhr.onerror = () => reject(new Error("Network error"));
-            xhr.send(formData);
+          // Step 1: Get a resumable upload URL from our server
+          const initRes = await fetch("/api/upload/init", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              clientId: selectedClientId,
+              fileName: item.file.name,
+              mimeType: item.file.type || "video/mp4",
+            }),
           });
+
+          if (!initRes.ok) {
+            const err = await initRes.json();
+            throw new Error(err.error || "Failed to initialize upload");
+          }
+
+          const { uploadUrl } = await initRes.json();
+
+          // Step 2: Upload directly to Google Drive with progress
+          const driveFileId = await uploadToDrive(uploadUrl, item.file, (pct) => {
+            setQueue((q) =>
+              q.map((i) => (i.id === item.id ? { ...i, progress: pct } : i))
+            );
+          });
+
+          // Step 3: Tell our server the upload is complete
+          const completeRes = await fetch("/api/upload/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              clientId: selectedClientId,
+              driveFileId,
+              fileName: item.file.name,
+              fileSize: item.file.size,
+              mimeType: item.file.type || "video/mp4",
+            }),
+          });
+
+          if (!completeRes.ok) {
+            throw new Error("Failed to register clip");
+          }
+
+          setQueue((q) =>
+            q.map((i) =>
+              i.id === item.id
+                ? { ...i, progress: 100, status: "complete" }
+                : i
+            )
+          );
         } catch (err) {
           setQueue((q) =>
             q.map((i) =>
@@ -223,7 +238,7 @@ export default function UploadPage() {
         <p className="text-white font-medium mb-1">
           Drop video files here or click to browse
         </p>
-        <p className="text-muted text-sm">MP4, MOV, MKV</p>
+        <p className="text-muted text-sm">MP4, MOV, MKV — uploads directly to Google Drive</p>
       </div>
 
       {queue.length > 0 && (
@@ -303,4 +318,42 @@ export default function UploadPage() {
       )}
     </div>
   );
+}
+
+/**
+ * Upload a file directly to Google Drive using a resumable upload URL.
+ * Returns the Drive file ID.
+ */
+async function uploadToDrive(
+  uploadUrl: string,
+  file: File,
+  onProgress: (percent: number) => void
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUrl);
+    xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          resolve(response.id);
+        } catch {
+          reject(new Error("Failed to parse Drive response"));
+        }
+      } else {
+        reject(new Error(`Drive upload failed: ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.send(file);
+  });
 }

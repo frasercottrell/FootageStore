@@ -74,6 +74,62 @@ export async function deleteClientFolder(folderId: string): Promise<void> {
 }
 
 /**
+ * Get a fresh access token for client-side Drive uploads.
+ */
+export async function getAccessToken(): Promise<string> {
+  const clientId = process.env.GOOGLE_CLIENT_ID!;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN!;
+
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+  const { token } = await oauth2Client.getAccessToken();
+  if (!token) throw new Error("Failed to get access token");
+  return token;
+}
+
+/**
+ * Create a resumable upload session on Google Drive.
+ * Returns the resumable upload URL that the browser can PUT data to.
+ */
+export async function getUploadUrl(
+  folderId: string,
+  fileName: string,
+  mimeType: string
+): Promise<string> {
+  const accessToken = await getAccessToken();
+
+  const metadata = {
+    name: fileName,
+    parents: [folderId],
+  };
+
+  const res = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-Upload-Content-Type": mimeType,
+      },
+      body: JSON.stringify(metadata),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to create resumable upload: ${res.status} ${text}`);
+  }
+
+  const uploadUrl = res.headers.get("location");
+  if (!uploadUrl) throw new Error("No upload URL in response");
+
+  return uploadUrl;
+}
+
+/**
  * Upload a file to a client's folder in Google Drive.
  * Returns the Google Drive file ID.
  */
