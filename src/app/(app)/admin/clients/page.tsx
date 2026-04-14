@@ -12,7 +12,7 @@ interface Client {
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
+  if (!bytes || bytes === 0) return "0 B";
   const sizes = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
@@ -33,6 +33,16 @@ export default function ManageClientsPage() {
   const [newName, setNewName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Editing state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Delete state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const fetchClients = async () => {
     try {
@@ -75,6 +85,58 @@ export default function ManageClientsPage() {
       setError(err instanceof Error ? err.message : "Failed to create client");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const startEditing = (client: Client) => {
+    setEditingId(client.id);
+    setEditName(client.name);
+    setEditError("");
+    setConfirmDeleteId(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditError("");
+  };
+
+  const handleSaveEdit = async (clientId: string) => {
+    if (!editName.trim()) return;
+    setEditSubmitting(true);
+    setEditError("");
+
+    try {
+      const res = await fetch(`/api/clients/${clientId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update client");
+      }
+
+      setEditingId(null);
+      fetchClients();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Failed to update");
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (clientId: string) => {
+    setDeleteSubmitting(true);
+    try {
+      const res = await fetch(`/api/clients/${clientId}`, { method: "DELETE" });
+      if (res.ok) {
+        setConfirmDeleteId(null);
+        fetchClients();
+      }
+    } finally {
+      setDeleteSubmitting(false);
     }
   };
 
@@ -163,13 +225,52 @@ export default function ManageClientsPage() {
                 <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-5 py-3">
                   Date Added
                 </th>
+                <th className="text-right text-xs font-medium text-muted uppercase tracking-wider px-5 py-3">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {clients.map((client) => (
-                <tr key={client.id} className="hover:bg-surface-hover transition-colors">
+                <tr key={client.id} className="hover:bg-surface-hover transition-colors group">
                   <td className="px-5 py-3.5">
-                    <span className="text-sm text-white font-medium">{client.name}</span>
+                    {editingId === client.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveEdit(client.id);
+                            if (e.key === "Escape") cancelEditing();
+                          }}
+                          className="bg-bg border border-accent rounded-md px-3 py-1 text-sm text-white focus:outline-none w-full max-w-xs"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleSaveEdit(client.id)}
+                          disabled={editSubmitting || !editName.trim()}
+                          className="text-accent hover:text-accent-hover disabled:opacity-50 p-1"
+                          title="Save"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={cancelEditing}
+                          className="text-muted hover:text-white p-1"
+                          title="Cancel"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                        {editError && <span className="text-red-400 text-xs">{editError}</span>}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-white font-medium">{client.name}</span>
+                    )}
                   </td>
                   <td className="px-5 py-3.5">
                     <span className="text-sm text-neutral-300">{client.clipCount}</span>
@@ -184,12 +285,56 @@ export default function ManageClientsPage() {
                       {client.createdAt ? formatDate(client.createdAt) : "-"}
                     </span>
                   </td>
+                  <td className="px-5 py-3.5 text-right">
+                    {confirmDeleteId === client.id ? (
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-xs text-red-400">Delete {client.clipCount} clips?</span>
+                        <button
+                          onClick={() => handleDelete(client.id)}
+                          disabled={deleteSubmitting}
+                          className="text-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-3 py-1 rounded-md transition-colors"
+                        >
+                          {deleteSubmitting ? "..." : "Yes"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="text-xs text-muted hover:text-white px-2 py-1 transition-colors"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : editingId === client.id ? null : (
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => startEditing(client)}
+                          className="text-muted hover:text-white p-1.5 rounded-md hover:bg-white/5 transition-colors"
+                          title="Edit"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setConfirmDeleteId(client.id);
+                            setEditingId(null);
+                          }}
+                          className="text-muted hover:text-red-400 p-1.5 rounded-md hover:bg-red-500/10 transition-colors"
+                          title="Delete"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
               {clients.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-5 py-10 text-center text-muted text-sm">
-                    No clients yet. Click "Add Client" to get started.
+                  <td colSpan={5} className="px-5 py-10 text-center text-muted text-sm">
+                    No clients yet. Click &ldquo;Add Client&rdquo; to get started.
                   </td>
                 </tr>
               )}
