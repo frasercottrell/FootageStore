@@ -214,15 +214,24 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate }: C
             <div>
               <p className="text-[11px] text-muted uppercase tracking-wider mb-1.5">Shot Type</p>
               <div className="flex items-center gap-1.5 flex-wrap">
-                {["Close-Up", "Extreme Close-Up", "Medium", "Wide", "Full Body", "Over the Shoulder", "POV", "Top Down", "Low Angle", "High Angle", "Tracking"].map((type) => (
+                {localShotType && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent/15 text-accent rounded-full text-xs font-medium">
+                    {localShotType}
+                    <button
+                      onClick={() => saveShotType("")}
+                      className="text-accent/60 hover:text-red-400 transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+                {["Close-Up", "Extreme Close-Up", "Medium", "Wide", "Full Body", "Over the Shoulder", "POV", "Top Down", "Low Angle", "High Angle", "Tracking"].filter((t) => t !== localShotType).map((type) => (
                   <button
                     key={type}
-                    onClick={() => saveShotType(localShotType === type ? "" : type)}
-                    className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                      localShotType === type
-                        ? "bg-accent text-white"
-                        : "bg-white/5 text-neutral-500 hover:text-neutral-300 hover:bg-white/10"
-                    }`}
+                    onClick={() => saveShotType(type)}
+                    className="px-2 py-0.5 rounded-full text-xs font-medium transition-colors bg-white/5 text-neutral-500 hover:text-neutral-300 hover:bg-white/10"
                   >
                     {type}
                   </button>
