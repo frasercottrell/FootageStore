@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { clients, clips } from "@/lib/db/schema";
 import { eq, sql, count } from "drizzle-orm";
+import { createClientFolder } from "@/lib/gdrive";
 
 export async function GET() {
   const session = await auth();
@@ -44,9 +45,17 @@ export async function POST(request: NextRequest) {
     .replace(/^-|-$/g, "");
 
   try {
+    // Create folder in Google Drive
+    let driveFolderId: string | null = null;
+    try {
+      driveFolderId = await createClientFolder(name.trim());
+    } catch (driveErr) {
+      console.error("Failed to create Google Drive folder:", driveErr);
+    }
+
     const [client] = await db
       .insert(clients)
-      .values({ name: name.trim(), slug })
+      .values({ name: name.trim(), slug, driveFolderId })
       .returning();
 
     return NextResponse.json(client, { status: 201 });

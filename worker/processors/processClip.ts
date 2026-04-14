@@ -1,9 +1,10 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
-import { clips } from "../../src/lib/db/schema";
+import { clips, clients } from "../../src/lib/db/schema";
 import {
   getProcessedDir,
+  getOriginalDir,
   getThumbnailPath,
   getSpriteSheetPath,
   getWebVTTPath,
@@ -13,6 +14,9 @@ import { extractMetadata } from "./extractMetadata";
 import { generateThumbnail } from "./generateThumbnail";
 import { generateSpriteSheet } from "./generateSpriteSheet";
 import { generateClipName } from "./generateClipName";
+import { uploadFileToDrive } from "../../src/lib/gdrive";
+import fs from "fs";
+import fsPromises from "fs/promises";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle(pool);
@@ -90,7 +94,37 @@ export async function processClip(data: JobData): Promise<void> {
       clipName = clip.originalFilename.replace(/\.[^.]+$/, "");
     }
 
-    // 6. Update clip to ready
+    // 6. Upload original to Google Drive
+    let driveFileId: string | null = null;
+    try {
+      // Look up the client's Drive folder ID
+      const [client] = await db
+        .select({ driveFolderId: clients.driveFolderId })
+        .from(clients)
+        .where(eq(clients.id, clip.clientId))
+        .limit(1);
+
+      if (client?.driveFolderId) {
+        console.log(`[processClip] Uploading ${clipId} to Google Drive...`);
+        const fileStream = fs.createReadStream(inputPath);
+        driveFileId = await uploadFileToDrive(
+          client.driveFolderId,
+          clip.originalFilename,
+          clip.mimeType,
+          fileStream
+        );
+        console.log(`[processClip] Uploaded to Drive: ${driveFileId}`);
+
+        // Clean up local original file (keep processed assets locally for fast serving)
+        const originalDir = getOriginalDir(clip.clientId, clipId);
+        await fsPromises.rm(originalDir, { recursive: true, force: true }).catch(() => {});
+      }
+    } catch (driveErr) {
+      console.error(`[processClip] Drive upload failed for ${clipId}:`, (driveErr as Error).message);
+      // Continue — clip is still usable, just won't be on Drive
+    }
+
+    // 7. Update clip to ready
     await db
       .update(clips)
       .set({
@@ -99,6 +133,7 @@ export async function processClip(data: JobData): Promise<void> {
         thumbnailPath,
         spriteSheetPath: spritePath,
         webvttPath: vttPath,
+        driveFileId,
         status: "ready",
         updatedAt: new Date(),
       })

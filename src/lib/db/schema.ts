@@ -31,6 +31,7 @@ export const clients = pgTable("clients", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
+  driveFolderId: varchar("drive_folder_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -55,6 +56,7 @@ export const clips = pgTable("clips", {
   spriteSheetPath: text("sprite_sheet_path"),
   webvttPath: text("webvtt_path"),
   originalPath: text("original_path").notNull(),
+  driveFileId: varchar("drive_file_id", { length: 255 }),
   uploadedBy: uuid("uploaded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

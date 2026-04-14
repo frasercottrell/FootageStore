@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { clients } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { renameClientFolder, deleteClientFolder } from "@/lib/gdrive";
 
 export async function GET(
   _request: NextRequest,
@@ -69,6 +70,15 @@ export async function PATCH(
     return NextResponse.json({ error: "Client not found" }, { status: 404 });
   }
 
+  // Rename the Google Drive folder if it exists
+  if (updated.driveFolderId) {
+    try {
+      await renameClientFolder(updated.driveFolderId, name);
+    } catch (err) {
+      console.error("Failed to rename Google Drive folder:", err);
+    }
+  }
+
   return NextResponse.json(updated);
 }
 
@@ -82,13 +92,27 @@ export async function DELETE(
 
   const { clientId } = await params;
 
-  const [deleted] = await db
-    .delete(clients)
+  // Look up the client first to get the Drive folder ID
+  const [client] = await db
+    .select()
+    .from(clients)
     .where(eq(clients.id, clientId))
-    .returning();
+    .limit(1);
 
-  if (!deleted) {
+  if (!client) {
     return NextResponse.json({ error: "Client not found" }, { status: 404 });
+  }
+
+  // Delete from DB (cascades to clips)
+  await db.delete(clients).where(eq(clients.id, clientId));
+
+  // Delete the Google Drive folder if it exists
+  if (client.driveFolderId) {
+    try {
+      await deleteClientFolder(client.driveFolderId);
+    } catch (err) {
+      console.error("Failed to delete Google Drive folder:", err);
+    }
   }
 
   return NextResponse.json({ success: true });

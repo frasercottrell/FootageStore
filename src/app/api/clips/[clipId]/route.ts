@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
 import { getOriginalDir, getProcessedDir } from "@/lib/storage";
+import { deleteFileFromDrive } from "@/lib/gdrive";
 
 export async function GET(
   _request: NextRequest,
@@ -85,6 +86,8 @@ export async function DELETE(
   await Promise.allSettled([
     fs.rm(originalDir, { recursive: true, force: true }),
     fs.rm(processedDir, { recursive: true, force: true }),
+    // Delete from Google Drive if it exists
+    clip.driveFileId ? deleteFileFromDrive(clip.driveFileId) : Promise.resolve(),
   ]);
 
   await db.delete(clips).where(eq(clips.id, clipId));

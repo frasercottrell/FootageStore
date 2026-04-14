@@ -5,6 +5,7 @@ import { clips } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import fs from "fs";
 import { stat } from "fs/promises";
+import { downloadFileFromDrive, getDriveFileSize } from "@/lib/gdrive";
 
 export async function GET(
   request: NextRequest,
@@ -25,23 +26,43 @@ export async function GET(
     return NextResponse.json({ error: "Clip not found" }, { status: 404 });
   }
 
+  const headers: Record<string, string> = {
+    "Content-Type": clip.mimeType,
+    "Content-Disposition": `attachment; filename="${encodeURIComponent(clip.originalFilename)}"`,
+    "Accept-Ranges": "bytes",
+  };
+
+  // If the file is on Google Drive, stream from there
+  if (clip.driveFileId) {
+    try {
+      const fileSize = await getDriveFileSize(clip.driveFileId);
+      const stream = await downloadFileFromDrive(clip.driveFileId);
+
+      return new NextResponse(stream as unknown as ReadableStream, {
+        status: 200,
+        headers: {
+          ...headers,
+          "Content-Length": String(fileSize),
+        },
+      });
+    } catch (err) {
+      console.error("Failed to download from Google Drive:", err);
+      // Fall through to try local file
+    }
+  }
+
+  // Fallback: serve from local filesystem
   const filePath = clip.originalPath;
 
   let fileStat;
   try {
     fileStat = await stat(filePath);
   } catch {
-    return NextResponse.json({ error: "File not found on disk" }, { status: 404 });
+    return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 
   const fileSize = fileStat.size;
   const rangeHeader = request.headers.get("range");
-
-  const headers: Record<string, string> = {
-    "Content-Type": clip.mimeType,
-    "Content-Disposition": `attachment; filename="${encodeURIComponent(clip.originalFilename)}"`,
-    "Accept-Ranges": "bytes",
-  };
 
   if (rangeHeader) {
     const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
