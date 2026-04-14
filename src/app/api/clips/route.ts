@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const clientId = searchParams.get("clientId");
   const search = searchParams.get("search");
+  const shotType = searchParams.get("shotType");
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
   const offset = (page - 1) * limit;
@@ -22,6 +23,9 @@ export async function GET(request: NextRequest) {
   const conditions = [eq(clips.clientId, clientId)];
   if (search) {
     conditions.push(ilike(clips.name, `%${search}%`));
+  }
+  if (shotType) {
+    conditions.push(eq(clips.shotType, shotType));
   }
 
   const where = and(...conditions);

@@ -20,6 +20,8 @@ interface Clip {
   createdAt?: string;
   hasThumbnail: boolean;
   hasSpriteSheet: boolean;
+  shotType?: string | null;
+  description?: string | null;
 }
 
 interface ClipDetailModalProps {
@@ -156,8 +158,13 @@ export default function ClipDetailModal({ clip, onClose, onDelete }: ClipDetailM
 
           {/* Info side */}
           <div className={`${isPortrait ? "md:w-[50%]" : "md:w-[35%]"} p-5 flex flex-col gap-4 border-l border-white/5`}>
-            {/* Client & date */}
-            <div className="flex items-center gap-2 text-sm text-muted">
+            {/* Shot type badge & client/date */}
+            <div className="flex items-center gap-2 text-sm text-muted flex-wrap">
+              {clip.shotType && (
+                <span className="px-2 py-0.5 bg-accent/15 text-accent rounded-full text-xs font-medium">
+                  {clip.shotType}
+                </span>
+              )}
               <span className="text-accent">{clip.clientName}</span>
               <span className="text-white/20">&middot;</span>
               <span>{formatDate(dateStr)}</span>
@@ -193,6 +200,14 @@ export default function ClipDetailModal({ clip, onClose, onDelete }: ClipDetailM
                 <p className="text-sm text-white mt-0.5 break-all">{clip.originalFilename || "-"}</p>
               </div>
             </div>
+
+            {/* AI Description */}
+            {clip.description && (
+              <div>
+                <p className="text-[11px] text-muted uppercase tracking-wider mb-1.5">AI Description</p>
+                <p className="text-sm text-neutral-400 leading-relaxed">{clip.description}</p>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex flex-col gap-2 mt-auto">

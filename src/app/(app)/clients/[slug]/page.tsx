@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ClipGrid from "@/components/clips/ClipGrid";
@@ -29,6 +29,7 @@ interface Clip {
   uploadedAt: string;
   hasThumbnail: boolean;
   hasSpriteSheet: boolean;
+  shotType?: string | null;
 }
 
 function formatBytes(bytes: number): string {
@@ -45,6 +46,7 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [clips, setClips] = useState<Clip[]>([]);
   const [search, setSearch] = useState("");
+  const [selectedShotType, setSelectedShotType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
 
@@ -70,9 +72,27 @@ export default function ClientDetailPage() {
     fetchData();
   }, [slug]);
 
-  const filteredClips = clips.filter((clip) =>
-    (clip.name || clip.originalFilename || "").toLowerCase().includes(search.toLowerCase())
-  );
+  // Get unique shot types from clips for filter chips
+  const shotTypes = useMemo(() => {
+    const types = new Map<string, number>();
+    for (const clip of clips) {
+      if (clip.shotType) {
+        types.set(clip.shotType, (types.get(clip.shotType) || 0) + 1);
+      }
+    }
+    // Sort by count descending
+    return Array.from(types.entries()).sort((a, b) => b[1] - a[1]);
+  }, [clips]);
+
+  const filteredClips = useMemo(() => {
+    return clips.filter((clip) => {
+      const matchesSearch = (clip.name || clip.originalFilename || "")
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesShotType = !selectedShotType || clip.shotType === selectedShotType;
+      return matchesSearch && matchesShotType;
+    });
+  }, [clips, search, selectedShotType]);
 
   const handleSelect = useCallback((clip: Clip) => {
     setSelectedClip(clip);
@@ -152,12 +172,46 @@ export default function ClientDetailPage() {
             />
           </div>
         </div>
+
+        {/* Shot type filter chips */}
+        {shotTypes.length > 0 && (
+          <div className="flex items-center gap-2 mt-4 flex-wrap">
+            <button
+              onClick={() => setSelectedShotType(null)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                selectedShotType === null
+                  ? "bg-accent text-white"
+                  : "bg-surface border border-border text-neutral-400 hover:text-white hover:border-neutral-600"
+              }`}
+            >
+              All
+            </button>
+            {shotTypes.map(([type, count]) => (
+              <button
+                key={type}
+                onClick={() =>
+                  setSelectedShotType(selectedShotType === type ? null : type)
+                }
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedShotType === type
+                    ? "bg-accent text-white"
+                    : "bg-surface border border-border text-neutral-400 hover:text-white hover:border-neutral-600"
+                }`}
+              >
+                {type}
+                <span className="ml-1.5 opacity-60">{count}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {filteredClips.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-muted">
-            {search ? "No clips match your search" : "No clips uploaded yet"}
+            {search || selectedShotType
+              ? "No clips match your filters"
+              : "No clips uploaded yet"}
           </p>
         </div>
       ) : (

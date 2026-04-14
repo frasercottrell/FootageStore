@@ -100,10 +100,12 @@ export async function processClip(data: JobData): Promise<void> {
     console.log(`[processClip] Analyzing scene for ${clipId}`);
     let clipName: string;
     let clipDescription: string | null = null;
+    let clipShotType: string | null = null;
     try {
       const analysis = await generateClipName(inputPath, metadata.duration, clipId);
       clipName = analysis.name;
       clipDescription = analysis.description;
+      clipShotType = analysis.shotType;
     } catch (err) {
       console.warn(
         `[processClip] AI analysis failed for ${clipId}, using filename:`,
@@ -154,6 +156,7 @@ export async function processClip(data: JobData): Promise<void> {
       .set({
         name: clipName,
         description: clipDescription,
+        shotType: clipShotType,
         thumbnailPath,
         spriteSheetPath: spritePath,
         webvttPath: vttPath,

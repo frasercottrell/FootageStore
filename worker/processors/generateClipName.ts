@@ -8,9 +8,24 @@ const anthropic = new Anthropic();
 
 const FRAME_COUNT = 12;
 
+const SHOT_TYPES = [
+  "UGC",
+  "Product Demo",
+  "Testimonial",
+  "Lifestyle",
+  "B-Roll",
+  "Unboxing",
+  "Tutorial",
+  "Before & After",
+  "Talking Head",
+  "Product Close-Up",
+  "Other",
+] as const;
+
 interface SceneAnalysis {
   name: string;
   description: string;
+  shotType: string;
 }
 
 export async function generateClipName(
@@ -77,7 +92,21 @@ export async function generateClipName(
 Respond in EXACTLY this format:
 
 TITLE: [3-8 word descriptive title]
+SHOT_TYPE: [exactly one of: ${SHOT_TYPES.join(", ")}]
 DESCRIPTION: [Detailed paragraph describing the scene]
+
+For SHOT_TYPE, pick the single best match:
+- UGC: Casual, phone-filmed, authentic user content
+- Product Demo: Showing how a product works or its features
+- Testimonial: Someone speaking about their experience
+- Lifestyle: Product in real-world context, aspirational
+- B-Roll: Supplementary/atmospheric footage, no main action
+- Unboxing: Opening or revealing a product/package
+- Tutorial: Step-by-step instructions or how-to
+- Before & After: Showing transformation or comparison
+- Talking Head: Person speaking directly to camera
+- Product Close-Up: Tight shots focused on product details
+- Other: Doesn't fit any category above
 
 For the DESCRIPTION, include:
 - What subjects/people are doing (actions, movements, gestures)
@@ -101,12 +130,18 @@ Write naturally — this description will be used for search, so use the kind of
 
     // Parse the response
     const titleMatch = text.match(/TITLE:\s*(.+)/i);
+    const shotTypeMatch = text.match(/SHOT_TYPE:\s*(.+)/i);
     const descMatch = text.match(/DESCRIPTION:\s*([\s\S]+)/i);
 
     const name = titleMatch?.[1]?.trim() ?? "Untitled Clip";
+    const rawShotType = shotTypeMatch?.[1]?.trim() ?? "Other";
+    // Validate against known shot types
+    const shotType = SHOT_TYPES.find(
+      (t) => t.toLowerCase() === rawShotType.toLowerCase()
+    ) ?? "Other";
     const description = descMatch?.[1]?.trim() ?? text;
 
-    return { name, description };
+    return { name, description, shotType };
   } finally {
     // Clean up temp files
     for (const fp of framePaths) {

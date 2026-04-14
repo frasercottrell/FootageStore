@@ -56,6 +56,7 @@ export const clips = pgTable("clips", {
   spriteSheetPath: text("sprite_sheet_path"),
   webvttPath: text("webvtt_path"),
   originalPath: text("original_path").notNull(),
+  shotType: varchar("shot_type", { length: 50 }), // AI-classified shot type for filtering
   driveFileId: varchar("drive_file_id", { length: 255 }),
   uploadedBy: uuid("uploaded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
