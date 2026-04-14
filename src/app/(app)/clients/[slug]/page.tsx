@@ -40,7 +40,6 @@ function FilterDropdown({
   options,
   selected,
   onToggle,
-  singleSelect,
   accentColor,
 }: {
   label: string;
