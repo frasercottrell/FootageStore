@@ -4,9 +4,13 @@ import { db } from "@/lib/db";
 import { clips } from "@/lib/db/schema";
 import { getOriginalPath, ensureDir, getOriginalDir } from "@/lib/storage";
 import { getClipQueue } from "@/lib/queue";
-import fs from "fs/promises";
+import { createWriteStream } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { Writable } from "stream";
+
+export const maxDuration = 300;
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -32,9 +36,36 @@ export async function POST(request: NextRequest) {
   // Ensure the directory exists
   await ensureDir(getOriginalDir(clientId, clipId));
 
-  // Write the file to disk
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(originalPath, buffer);
+  // Stream the file to disk instead of loading into memory
+  const fileStream = file.stream();
+  const writeStream = createWriteStream(originalPath);
+
+  await new Promise<void>((resolve, reject) => {
+    const reader = fileStream.getReader();
+    const writable = new Writable({
+      write(chunk, _encoding, callback) {
+        writeStream.write(chunk, callback);
+      },
+    });
+
+    function pump(): void {
+      reader.read().then(({ done, value }) => {
+        if (done) {
+          writeStream.end();
+          resolve();
+          return;
+        }
+        if (!writable.write(value)) {
+          writable.once("drain", pump);
+        } else {
+          pump();
+        }
+      }).catch(reject);
+    }
+
+    writeStream.on("error", reject);
+    pump();
+  });
 
   // Create clip record
   const [clip] = await db
@@ -45,7 +76,7 @@ export async function POST(request: NextRequest) {
       name: name || null,
       originalFilename: file.name,
       mimeType: file.type || "video/mp4",
-      fileSize: buffer.length,
+      fileSize: file.size,
       status: "processing",
       originalPath,
       uploadedBy: session.user.id,
