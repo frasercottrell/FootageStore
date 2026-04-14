@@ -7,7 +7,7 @@ import ClipDetailModal from "@/components/clips/ClipDetailModal";
 
 interface Clip {
   id: string;
-  name: string;
+  name: string | null;
   description?: string | null;
   clientId: string;
   clientName: string;
@@ -129,7 +129,7 @@ export default function SearchPage() {
                     >
                       <div className="flex items-start gap-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-white">{clip.name}</p>
+                          <p className="text-sm font-medium text-white">{clip.name || clip.originalFilename}</p>
                           <p className="text-xs text-accent mt-0.5">{clip.clientName}</p>
                           <p className="text-xs text-muted mt-1 line-clamp-2">
                             {clip.description}
