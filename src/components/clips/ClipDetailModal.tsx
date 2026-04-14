@@ -66,6 +66,7 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate }: C
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [newTag, setNewTag] = useState("");
+  const [newShotType, setNewShotType] = useState("");
   const [localTags, setLocalTags] = useState<string[]>(clip.tags || []);
   const [localShotType, setLocalShotType] = useState<string>(clip.shotType || "");
 
@@ -236,6 +237,22 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate }: C
                     {type}
                   </button>
                 ))}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const val = newShotType.trim();
+                    if (val) { saveShotType(val); setNewShotType(""); }
+                  }}
+                  className="inline-flex"
+                >
+                  <input
+                    type="text"
+                    value={newShotType}
+                    onChange={(e) => setNewShotType(e.target.value)}
+                    placeholder="+ Custom"
+                    className="bg-transparent border border-dashed border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-accent w-20"
+                  />
+                </form>
               </div>
             </div>
 
