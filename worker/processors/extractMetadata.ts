@@ -25,28 +25,33 @@ export function extractMetadata(inputPath: string): Promise<ClipMetadata> {
       let height = videoStream.height ?? 0;
       const codec = videoStream.codec_name ?? "unknown";
 
-      // Handle rotation metadata — phone videos often store portrait as
-      // 1920x1080 with rotation=90, so we need to swap width/height
-      const rotation = parseInt(
-        (videoStream as Record<string, unknown>).rotation as string ||
-        videoStream.tags?.rotate ||
-        "0",
-        10
-      );
-      if (rotation === 90 || rotation === -90 || rotation === 270 || rotation === -270) {
-        [width, height] = [height, width];
-      }
+      // Detect rotation from all possible sources
+      // Phone videos store portrait as 1920x1080 with rotation metadata
+      const rawStream = videoStream as Record<string, unknown>;
+      let detectedRotation = 0;
 
-      // Also check side_data for display matrix rotation (newer ffprobe)
-      if (videoStream.side_data_list) {
-        for (const sd of videoStream.side_data_list as Array<Record<string, unknown>>) {
-          if (sd.rotation && (sd.rotation === 90 || sd.rotation === -90 || sd.rotation === 270 || sd.rotation === -270)) {
-            // Only swap if we haven't already
-            if (rotation === 0) {
-              [width, height] = [height, width];
-            }
+      // Source 1: direct rotation property on stream
+      if (rawStream.rotation !== undefined) {
+        detectedRotation = Math.abs(Number(rawStream.rotation));
+      }
+      // Source 2: tags.rotate
+      else if (videoStream.tags?.rotate) {
+        detectedRotation = Math.abs(Number(videoStream.tags.rotate));
+      }
+      // Source 3: side_data_list display matrix (newer ffprobe versions)
+      else if (rawStream.side_data_list && Array.isArray(rawStream.side_data_list)) {
+        for (const sd of rawStream.side_data_list as Array<Record<string, unknown>>) {
+          if (sd.side_data_type === "Display Matrix" && sd.rotation !== undefined) {
+            detectedRotation = Math.abs(Number(sd.rotation));
+            break;
           }
         }
+      }
+
+      // Swap width/height for 90° or 270° rotation
+      if (detectedRotation === 90 || detectedRotation === 270) {
+        console.log(`[extractMetadata] Rotation ${detectedRotation}° detected — swapping ${width}x${height} to ${height}x${width}`);
+        [width, height] = [height, width];
       }
 
       // Parse fps from r_frame_rate (e.g. "30/1" or "24000/1001")
