@@ -72,7 +72,7 @@ export async function processClip(data: JobData): Promise<void> {
     console.log(`[processClip] Generating sprite sheet for ${clipId}`);
     const spritePath = getSpriteSheetPath(clipId);
     const vttPath = getWebVTTPath(clipId);
-    await generateSpriteSheet(inputPath, spritePath, vttPath, metadata.duration);
+    await generateSpriteSheet(inputPath, spritePath, vttPath, metadata.duration, metadata.width, metadata.height);
 
     // 5. Generate AI clip name
     console.log(`[processClip] Generating AI clip name for ${clipId}`);
