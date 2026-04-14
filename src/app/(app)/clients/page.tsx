@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { clients, clips } from "@/lib/db/schema";
+import { count, eq } from "drizzle-orm";
 
 interface Client {
   id: string;
@@ -30,35 +32,34 @@ function getAvatarColor(name: string) {
 }
 
 async function getClients(): Promise<Client[]> {
-  const session = await auth();
-  if (!session) return [];
+  const result = await db
+    .select({
+      id: clients.id,
+      name: clients.name,
+      slug: clients.slug,
+      clipCount: count(clips.id),
+    })
+    .from(clients)
+    .leftJoin(clips, eq(clients.id, clips.clientId))
+    .groupBy(clients.id)
+    .orderBy(clients.name);
 
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/clients`, {
-    cache: "no-store",
-    headers: {
-      cookie: `next-auth.session-token=${(session as unknown as { sessionToken?: string }).sessionToken || ""}`,
-    },
-  });
-
-  if (!res.ok) return [];
-  const data = await res.json();
-  return Array.isArray(data) ? data : data.clients || [];
+  return result;
 }
 
 export default async function ClientsPage() {
-  const clients = await getClients();
+  const clientList = await getClients();
 
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Clients</h1>
         <p className="text-muted text-sm mt-1">
-          {clients.length} client{clients.length !== 1 ? "s" : ""}
+          {clientList.length} client{clientList.length !== 1 ? "s" : ""}
         </p>
       </div>
 
-      {clients.length === 0 ? (
+      {clientList.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -69,7 +70,7 @@ export default async function ClientsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {clients.map((client) => (
+          {clientList.map((client) => (
             <Link
               key={client.id}
               href={`/clients/${client.slug}`}
