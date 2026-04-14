@@ -16,10 +16,12 @@ interface Clip {
   width: number;
   height: number;
   fileSize: number;
+  fileSizeBytes: number;
   codec: string;
   fps: number;
   originalFilename: string;
   createdAt: string;
+  uploadedAt: string;
   hasThumbnail: boolean;
   hasSpriteSheet: boolean;
 }

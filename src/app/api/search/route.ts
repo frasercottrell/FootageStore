@@ -54,9 +54,11 @@ export async function GET(request: NextRequest) {
     .orderBy(sql`rank DESC`)
     .limit(limit);
 
-  // Add computed fields for the frontend
+  // Add computed/aliased fields for the frontend
   const clipsWithMeta = results.map((clip) => ({
     ...clip,
+    fileSizeBytes: clip.fileSize,
+    uploadedAt: clip.createdAt,
     hasThumbnail: !!clip.thumbnailPath,
     hasSpriteSheet: !!clip.spriteSheetPath,
   }));
