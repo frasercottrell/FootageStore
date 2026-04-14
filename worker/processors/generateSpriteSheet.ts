@@ -3,10 +3,10 @@ import path from "path";
 import fs from "fs/promises";
 import { ensureDir } from "../../src/lib/storage";
 
-const GRID_COLS = 11;
-const GRID_ROWS = 11;
-const TOTAL_FRAMES = GRID_COLS * GRID_ROWS; // 121
-const FRAME_WIDTH = 480;
+const GRID_COLS = 8;
+const GRID_ROWS = 8;
+const TOTAL_FRAMES = GRID_COLS * GRID_ROWS; // 64
+const FRAME_WIDTH = 640;
 
 export async function generateSpriteSheet(
   inputPath: string,

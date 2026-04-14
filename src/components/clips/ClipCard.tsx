@@ -63,17 +63,17 @@ export default function ClipCard({ clip, onSelect }: ClipCardProps) {
     setSkimPercent(null);
   }, []);
 
-  // Sprite sheet: 11x11 grid = 121 frames
+  // Sprite sheet: 8x8 grid = 64 frames
   const spriteStyle =
     skimPercent !== null && hasSpriteSheet
       ? (() => {
-          const frameIndex = Math.floor(skimPercent * 120);
-          const col = frameIndex % 11;
-          const row = Math.floor(frameIndex / 11);
+          const frameIndex = Math.floor(skimPercent * 63);
+          const col = frameIndex % 8;
+          const row = Math.floor(frameIndex / 8);
           return {
             backgroundImage: `url(/api/assets/${clip.id}/sprite.jpg)`,
-            backgroundSize: "1100% 1100%",
-            backgroundPosition: `${(col / 10) * 100}% ${(row / 10) * 100}%`,
+            backgroundSize: "800% 800%",
+            backgroundPosition: `${(col / 7) * 100}% ${(row / 7) * 100}%`,
           };
         })()
       : undefined;
