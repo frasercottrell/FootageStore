@@ -51,10 +51,11 @@ export default function ClientDetailPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const clientRes = await fetch(`/api/clients?slug=${slug}`);
+        const clientRes = await fetch(`/api/clients`);
         if (!clientRes.ok) return;
         const clientData = await clientRes.json();
-        const foundClient = clientData.clients?.[0] || clientData.client;
+        const list = Array.isArray(clientData) ? clientData : clientData.clients || [];
+        const foundClient = list.find((c: Client) => c.slug === slug);
         if (!foundClient) return;
         setClient(foundClient);
 
