@@ -39,7 +39,7 @@ export default function ManageClientsPage() {
       const res = await fetch("/api/clients");
       if (!res.ok) return;
       const data = await res.json();
-      setClients(data.clients || []);
+      setClients(Array.isArray(data) ? data : data.clients || []);
     } finally {
       setLoading(false);
     }

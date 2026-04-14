@@ -43,7 +43,7 @@ async function getClients(): Promise<Client[]> {
 
   if (!res.ok) return [];
   const data = await res.json();
-  return data.clients || [];
+  return Array.isArray(data) ? data : data.clients || [];
 }
 
 export default async function ClientsPage() {
