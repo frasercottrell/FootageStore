@@ -415,7 +415,7 @@ export default function ClientDetailPage() {
             {/* Shot type dropdown */}
             {shotTypes.length > 0 && (
               <FilterDropdown
-                label="Shot"
+                label="Shot Type"
                 options={shotTypes}
                 selected={selectedShotTypes}
                 onToggle={toggleShotType}
