@@ -7,6 +7,13 @@ const SHOT_TYPES = [
   "Over the Shoulder", "POV", "Top Down", "Low Angle", "High Angle", "Tracking",
 ];
 
+interface SelectedClipSummary {
+  id: string;
+  tags: string[];
+  productSkus: string[];
+  shotType: string | null;
+}
+
 interface BulkActionBarProps {
   selectedCount: number;
   totalVisible: number;
@@ -18,9 +25,29 @@ interface BulkActionBarProps {
   onBulkDownload: () => void;
   existingTags: string[];
   existingSkus: string[];
+  selectedClips: SelectedClipSummary[];
 }
 
 type ActivePanel = null | "tags" | "skus" | "shotType";
+
+// Given a list of clips and a set of known values, compute which values are
+// applied to ALL selected clips ("all"), SOME but not all ("some"), or none.
+function computeAppliedState(
+  existing: string[],
+  valuesPerClip: string[][]
+): Map<string, "all" | "some"> {
+  const state = new Map<string, "all" | "some">();
+  if (valuesPerClip.length === 0) return state;
+  for (const value of existing) {
+    let count = 0;
+    for (const clipValues of valuesPerClip) {
+      if (clipValues.includes(value)) count++;
+    }
+    if (count === valuesPerClip.length) state.set(value, "all");
+    else if (count > 0) state.set(value, "some");
+  }
+  return state;
+}
 
 export default function BulkActionBar({
   selectedCount,
@@ -33,7 +60,20 @@ export default function BulkActionBar({
   onBulkDownload,
   existingTags,
   existingSkus,
+  selectedClips,
 }: BulkActionBarProps) {
+  const tagState = computeAppliedState(existingTags, selectedClips.map((c) => c.tags));
+  const skuState = computeAppliedState(existingSkus, selectedClips.map((c) => c.productSkus));
+  const shotTypeState = new Map<string, "all" | "some">();
+  {
+    const shotCounts = new Map<string, number>();
+    for (const c of selectedClips) {
+      if (c.shotType) shotCounts.set(c.shotType, (shotCounts.get(c.shotType) || 0) + 1);
+    }
+    for (const [st, count] of shotCounts) {
+      shotTypeState.set(st, count === selectedClips.length ? "all" : "some");
+    }
+  }
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const [tagInput, setTagInput] = useState("");
   const [skuInput, setSkuInput] = useState("");
@@ -169,16 +209,38 @@ export default function BulkActionBar({
                 <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Add tags to {selectedCount} clips</p>
                 {existingTags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2.5 max-h-32 overflow-y-auto">
-                    {existingTags.map((tag) => (
-                      <button
-                        key={tag}
-                        onClick={() => handleQuickAddTag(tag)}
-                        disabled={loading}
-                        className="px-2.5 py-1 rounded-full text-xs font-medium bg-white/5 text-neutral-400 hover:text-white hover:bg-accent transition-colors disabled:opacity-50"
-                      >
-                        {tag}
-                      </button>
-                    ))}
+                    {existingTags.map((tag) => {
+                      const applied = tagState.get(tag);
+                      return (
+                        <button
+                          key={tag}
+                          onClick={() => handleQuickAddTag(tag)}
+                          disabled={loading}
+                          title={
+                            applied === "all"
+                              ? `Already on all ${selectedCount} clips`
+                              : applied === "some"
+                                ? `On some selected clips`
+                                : undefined
+                          }
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
+                            applied === "all"
+                              ? "bg-accent text-white"
+                              : applied === "some"
+                                ? "bg-accent/20 text-accent border border-accent/40"
+                                : "bg-white/5 text-neutral-400 hover:text-white hover:bg-accent"
+                          }`}
+                        >
+                          {applied === "all" && (
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                          {applied === "some" && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                          {tag}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 <form onSubmit={(e) => { e.preventDefault(); handleAddTags(); }} className="flex gap-2">
@@ -221,16 +283,38 @@ export default function BulkActionBar({
                 <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Add SKUs to {selectedCount} clips</p>
                 {existingSkus.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2.5 max-h-32 overflow-y-auto">
-                    {existingSkus.map((sku) => (
-                      <button
-                        key={sku}
-                        onClick={() => handleQuickAddSku(sku)}
-                        disabled={loading}
-                        className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 hover:text-white hover:bg-emerald-500 transition-colors disabled:opacity-50"
-                      >
-                        {sku}
-                      </button>
-                    ))}
+                    {existingSkus.map((sku) => {
+                      const applied = skuState.get(sku);
+                      return (
+                        <button
+                          key={sku}
+                          onClick={() => handleQuickAddSku(sku)}
+                          disabled={loading}
+                          title={
+                            applied === "all"
+                              ? `Already on all ${selectedCount} clips`
+                              : applied === "some"
+                                ? `On some selected clips`
+                                : undefined
+                          }
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
+                            applied === "all"
+                              ? "bg-emerald-500 text-white"
+                              : applied === "some"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/50"
+                                : "bg-emerald-500/10 text-emerald-400 hover:text-white hover:bg-emerald-500"
+                          }`}
+                        >
+                          {applied === "all" && (
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                          {applied === "some" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                          {sku}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 <form onSubmit={(e) => { e.preventDefault(); handleAddSkus(); }} className="flex gap-2">
@@ -272,16 +356,38 @@ export default function BulkActionBar({
                 {toastBanner}
                 <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Set shot type for {selectedCount} clips</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {SHOT_TYPES.map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => handleSetShotType(type)}
-                      disabled={loading}
-                      className="px-2.5 py-1 rounded-full text-xs font-medium bg-white/5 text-neutral-400 hover:text-white hover:bg-accent transition-colors disabled:opacity-50"
-                    >
-                      {type}
-                    </button>
-                  ))}
+                  {SHOT_TYPES.map((type) => {
+                    const applied = shotTypeState.get(type);
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => handleSetShotType(type)}
+                        disabled={loading}
+                        title={
+                          applied === "all"
+                            ? `Already set on all ${selectedCount} clips`
+                            : applied === "some"
+                              ? `Set on some selected clips`
+                              : undefined
+                        }
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
+                          applied === "all"
+                            ? "bg-neutral-500 text-white"
+                            : applied === "some"
+                              ? "bg-neutral-500/25 text-neutral-200 border border-neutral-500/50"
+                              : "bg-white/5 text-neutral-400 hover:text-white hover:bg-accent"
+                        }`}
+                      >
+                        {applied === "all" && (
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                        {applied === "some" && <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />}
+                        {type}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
