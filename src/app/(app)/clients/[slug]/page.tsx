@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import ClipGrid from "@/components/clips/ClipGrid";
+import ClipGrid, { type GridSize } from "@/components/clips/ClipGrid";
 import ClipDetailModal from "@/components/clips/ClipDetailModal";
 import BulkActionBar from "@/components/clips/BulkActionBar";
 
@@ -133,6 +133,20 @@ export default function ClientDetailPage() {
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
   const [selectedClipIds, setSelectedClipIds] = useState<Set<string>>(new Set());
   const bulkMode = selectedClipIds.size > 0;
+  const [gridSize, setGridSize] = useState<GridSize>("medium");
+
+  // Persist grid size preference across sessions
+  useEffect(() => {
+    const saved = localStorage.getItem("footagestore:gridSize");
+    if (saved === "small" || saved === "medium" || saved === "large") {
+      setGridSize(saved);
+    }
+  }, []);
+
+  const changeGridSize = useCallback((size: GridSize) => {
+    setGridSize(size);
+    localStorage.setItem("footagestore:gridSize", size);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -409,10 +423,9 @@ export default function ClientDetailPage() {
           </div>
         </div>
 
-        {/* Filters */}
-        {(shotTypes.length > 0 || allTags.length > 0 || allSkus.length > 0) && (
-          <div className="mt-4 flex items-center gap-2 flex-wrap">
-            {/* Shot type dropdown */}
+        {/* Filters + size picker */}
+        <div className="mt-4 flex items-center gap-2 flex-wrap">
+          {/* Shot type dropdown */}
             {shotTypes.length > 0 && (
               <FilterDropdown
                 label="Shot Type"
@@ -461,8 +474,52 @@ export default function ClientDetailPage() {
                 </button>
               </>
             )}
+
+            {/* Size picker — pushed to the right */}
+            <div className="ml-auto flex items-center gap-1 bg-surface border border-border rounded-lg p-0.5">
+              {(["small", "medium", "large"] as const).map((size) => {
+                const isActive = gridSize === size;
+                return (
+                  <button
+                    key={size}
+                    onClick={() => changeGridSize(size)}
+                    title={`${size[0].toUpperCase()}${size.slice(1)} grid`}
+                    className={`p-1.5 rounded transition-colors ${
+                      isActive ? "bg-accent text-white" : "text-neutral-400 hover:text-white"
+                    }`}
+                  >
+                    {size === "small" && (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <rect x="3" y="3" width="5" height="5" rx="1" />
+                        <rect x="10" y="3" width="5" height="5" rx="1" />
+                        <rect x="17" y="3" width="4" height="5" rx="1" />
+                        <rect x="3" y="10" width="5" height="5" rx="1" />
+                        <rect x="10" y="10" width="5" height="5" rx="1" />
+                        <rect x="17" y="10" width="4" height="5" rx="1" />
+                        <rect x="3" y="17" width="5" height="4" rx="1" />
+                        <rect x="10" y="17" width="5" height="4" rx="1" />
+                        <rect x="17" y="17" width="4" height="4" rx="1" />
+                      </svg>
+                    )}
+                    {size === "medium" && (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <rect x="3" y="3" width="8" height="8" rx="1" />
+                        <rect x="13" y="3" width="8" height="8" rx="1" />
+                        <rect x="3" y="13" width="8" height="8" rx="1" />
+                        <rect x="13" y="13" width="8" height="8" rx="1" />
+                      </svg>
+                    )}
+                    {size === "large" && (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <rect x="3" y="3" width="18" height="8" rx="1" />
+                        <rect x="3" y="13" width="18" height="8" rx="1" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        )}
       </div>
 
       {filteredClips.length === 0 ? (
@@ -481,6 +538,7 @@ export default function ClientDetailPage() {
             selectedIds={selectedClipIds}
             onToggleSelect={toggleClipSelection}
             bulkMode={bulkMode}
+            size={gridSize}
           />
         </div>
       )}
