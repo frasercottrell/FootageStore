@@ -17,6 +17,9 @@ interface Clip {
   uploadedAt: string;
   hasThumbnail: boolean;
   hasSpriteSheet: boolean;
+  shotType?: string | null;
+  tags?: string[] | null;
+  productSkus?: string[] | null;
 }
 
 export type GridSize = "small" | "medium" | "large";

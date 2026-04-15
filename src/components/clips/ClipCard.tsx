@@ -17,6 +17,9 @@ interface Clip {
   uploadedAt: string;
   hasThumbnail: boolean;
   hasSpriteSheet: boolean;
+  shotType?: string | null;
+  tags?: string[] | null;
+  productSkus?: string[] | null;
   // Legacy fields for backward compat
   status?: string;
   thumbnailPath?: string | null;
@@ -178,11 +181,37 @@ export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, b
         </div>
       </div>
 
-      {/* Clip name */}
-      <div className="px-3 py-2.5">
+      {/* Clip name + metadata pills */}
+      <div className="px-3 py-2.5 space-y-2">
         <p className="text-sm text-neutral-300 truncate group-hover:text-white transition-colors">
           {clip.name || clip.originalFilename}
         </p>
+
+        {(clip.shotType || (clip.tags && clip.tags.length > 0) || (clip.productSkus && clip.productSkus.length > 0)) && (
+          <div className="flex flex-wrap gap-1">
+            {clip.shotType && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-700/60 text-neutral-200 border border-neutral-600/50">
+                {clip.shotType}
+              </span>
+            )}
+            {clip.tags?.map((tag) => (
+              <span
+                key={`t-${tag}`}
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent/15 text-accent border border-accent/25"
+              >
+                {tag}
+              </span>
+            ))}
+            {clip.productSkus?.map((sku) => (
+              <span
+                key={`s-${sku}`}
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/25"
+              >
+                {sku}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
