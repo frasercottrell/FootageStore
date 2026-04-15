@@ -47,7 +47,7 @@ function FilterDropdown({
   options: [string, number][];
   selected: Set<string>;
   onToggle: (val: string) => void;
-  accentColor?: "emerald";
+  accentColor?: "emerald" | "neutral";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -61,7 +61,22 @@ function FilterDropdown({
   }, [open]);
 
   const activeCount = selected.size;
-  const activeBg = accentColor === "emerald" ? "bg-emerald-500" : "bg-accent";
+  // Active background matches the pill colour used on each clip card:
+  //   neutral → shot type (grey)
+  //   emerald → SKUs
+  //   default (accent) → tags
+  const activeBg =
+    accentColor === "emerald"
+      ? "bg-emerald-500"
+      : accentColor === "neutral"
+        ? "bg-neutral-600"
+        : "bg-accent";
+  const checkColor =
+    accentColor === "emerald"
+      ? "text-emerald-400"
+      : accentColor === "neutral"
+        ? "text-neutral-300"
+        : "text-accent";
 
   return (
     <div className="relative" ref={ref}>
@@ -99,7 +114,7 @@ function FilterDropdown({
                 <span className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-neutral-600">{count}</span>
                   {isActive && (
-                    <svg className={`w-3 h-3 ${accentColor === "emerald" ? "text-emerald-400" : "text-accent"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <svg className={`w-3 h-3 ${checkColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   )}
@@ -453,6 +468,7 @@ export default function ClientDetailPage() {
                 options={shotTypes}
                 selected={selectedShotTypes}
                 onToggle={toggleShotType}
+                accentColor="neutral"
               />
             )}
 
