@@ -61,7 +61,7 @@ function FilterDropdown({
   }, [open]);
 
   const activeCount = selected.size;
-  // Active background matches the pill colour used on each clip card:
+  // Colours must match the pill colours used on each clip card:
   //   neutral → shot type (grey)
   //   emerald → SKUs
   //   default (accent) → tags
@@ -77,6 +77,14 @@ function FilterDropdown({
       : accentColor === "neutral"
         ? "text-neutral-300"
         : "text-accent";
+  // Inactive-state colours — a subtle tinted background + coloured text
+  // so each filter's identity is visible even before you select anything.
+  const inactiveClasses =
+    accentColor === "emerald"
+      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/15 hover:border-emerald-500/50"
+      : accentColor === "neutral"
+        ? "bg-neutral-500/10 border-neutral-500/30 text-neutral-300 hover:bg-neutral-500/15 hover:border-neutral-500/50"
+        : "bg-accent/10 border-accent/30 text-accent hover:bg-accent/15 hover:border-accent/50";
 
   return (
     <div className="relative" ref={ref}>
@@ -85,7 +93,7 @@ function FilterDropdown({
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
           activeCount > 0
             ? `${activeBg} text-white border-transparent`
-            : "bg-surface border-border text-neutral-400 hover:text-white hover:border-neutral-600"
+            : inactiveClasses
         }`}
       >
         {label}
