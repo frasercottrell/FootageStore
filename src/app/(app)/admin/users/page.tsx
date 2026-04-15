@@ -7,12 +7,11 @@ interface User {
   name: string;
   email: string;
   role: string;
-  lastActiveAt: string | null;
   createdAt: string;
 }
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "Never";
+  if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -20,29 +19,14 @@ function formatDate(dateStr: string | null): string {
   });
 }
 
-function formatRelative(dateStr: string | null): string {
-  if (!dateStr) return "Never";
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return formatDate(dateStr);
-}
-
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showInvite, setShowInvite] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteName, setInviteName] = useState("");
-  const [inviteRole, setInviteRole] = useState("viewer");
+  const [showForm, setShowForm] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState("editor");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -51,7 +35,8 @@ export default function UsersPage() {
       const res = await fetch("/api/users");
       if (!res.ok) return;
       const data = await res.json();
-      setUsers(data.users || []);
+      // API returns an array directly
+      setUsers(Array.isArray(data) ? data : data.users || []);
     } finally {
       setLoading(false);
     }
@@ -61,9 +46,18 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const generatePassword = () => {
+    const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let result = "";
+    for (let i = 0; i < 12; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    setNewPassword(result);
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteEmail.trim() || !inviteName.trim()) return;
+    if (!newEmail.trim() || !newName.trim() || !newPassword.trim()) return;
 
     setSubmitting(true);
     setError("");
@@ -73,24 +67,26 @@ export default function UsersPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: inviteEmail.trim(),
-          name: inviteName.trim(),
-          role: inviteRole,
+          email: newEmail.trim(),
+          name: newName.trim(),
+          password: newPassword,
+          role: newRole,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to invite user");
+        throw new Error(data.error || "Failed to create user");
       }
 
-      setInviteEmail("");
-      setInviteName("");
-      setInviteRole("viewer");
-      setShowInvite(false);
+      setNewEmail("");
+      setNewName("");
+      setNewPassword("");
+      setNewRole("editor");
+      setShowForm(false);
       fetchUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to invite user");
+      setError(err instanceof Error ? err.message : "Failed to create user");
     } finally {
       setSubmitting(false);
     }
@@ -100,12 +96,11 @@ export default function UsersPage() {
     const styles: Record<string, string> = {
       admin: "bg-amber-500/10 text-amber-400 border-amber-500/20",
       editor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-      viewer: "bg-neutral-500/10 text-neutral-400 border-neutral-500/20",
     };
     return (
       <span
         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border capitalize ${
-          styles[role] || styles.viewer
+          styles[role] || styles.editor
         }`}
       >
         {role}
@@ -123,30 +118,30 @@ export default function UsersPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowInvite(!showInvite)}
+          onClick={() => setShowForm(!showForm)}
           className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
           </svg>
-          Invite User
+          Add User
         </button>
       </div>
 
-      {showInvite && (
+      {showForm && (
         <form
-          onSubmit={handleInvite}
+          onSubmit={handleCreate}
           className="bg-surface border border-border rounded-xl p-4 mb-6 space-y-4"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-300 mb-1.5">
                 Name
               </label>
               <input
                 type="text"
-                value={inviteName}
-                onChange={(e) => setInviteName(e.target.value)}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
                 placeholder="Full name"
                 className="bg-bg border border-border rounded-lg px-4 py-2 text-sm text-white placeholder-muted focus:outline-none focus:border-accent w-full"
                 autoFocus
@@ -158,22 +153,45 @@ export default function UsersPage() {
               </label>
               <input
                 type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="email@example.com"
                 className="bg-bg border border-border rounded-lg px-4 py-2 text-sm text-white placeholder-muted focus:outline-none focus:border-accent w-full"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-300 mb-1.5">
+                Password
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Set a password"
+                  className="bg-bg border border-border rounded-lg px-4 py-2 text-sm text-white placeholder-muted focus:outline-none focus:border-accent w-full font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={generatePassword}
+                  className="bg-bg border border-border hover:border-accent text-neutral-300 hover:text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  Generate
+                </button>
+              </div>
+              <p className="text-xs text-muted mt-1">
+                Share this with the user — they can change it later.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">
                 Role
               </label>
               <select
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value)}
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
                 className="bg-bg border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-accent w-full appearance-none"
               >
-                <option value="viewer">Viewer</option>
                 <option value="editor">Editor</option>
                 <option value="admin">Admin</option>
               </select>
@@ -184,7 +202,7 @@ export default function UsersPage() {
             <button
               type="button"
               onClick={() => {
-                setShowInvite(false);
+                setShowForm(false);
                 setError("");
               }}
               className="px-4 py-2 text-sm text-muted hover:text-white transition-colors"
@@ -193,10 +211,15 @@ export default function UsersPage() {
             </button>
             <button
               type="submit"
-              disabled={submitting || !inviteEmail.trim() || !inviteName.trim()}
+              disabled={
+                submitting ||
+                !newEmail.trim() ||
+                !newName.trim() ||
+                !newPassword.trim()
+              }
               className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
-              {submitting ? "Inviting..." : "Send Invite"}
+              {submitting ? "Creating..." : "Create User"}
             </button>
           </div>
         </form>
@@ -223,7 +246,7 @@ export default function UsersPage() {
                   Role
                 </th>
                 <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-5 py-3">
-                  Last Active
+                  Created
                 </th>
               </tr>
             </thead>
@@ -239,7 +262,7 @@ export default function UsersPage() {
                   <td className="px-5 py-3.5">{roleBadge(user.role)}</td>
                   <td className="px-5 py-3.5">
                     <span className="text-sm text-neutral-300">
-                      {formatRelative(user.lastActiveAt)}
+                      {formatDate(user.createdAt)}
                     </span>
                   </td>
                 </tr>
