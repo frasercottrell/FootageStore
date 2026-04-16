@@ -167,6 +167,7 @@ export default function ClientDetailPage() {
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
   const [selectedClipIds, setSelectedClipIds] = useState<Set<string>>(new Set());
   const bulkMode = selectedClipIds.size > 0;
+  const [orientationFilter, setOrientationFilter] = useState<"all" | "horizontal" | "vertical">("all");
   const [gridSize, setGridSize] = useState<GridSize>("medium");
   const [collections, setCollections] = useState<Collection[]>([]);
   const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
@@ -305,9 +306,13 @@ export default function ClientDetailPage() {
       const matchesSkus =
         selectedSkus.size === 0 ||
         (clip.productSkus && Array.from(selectedSkus).every((s) => clip.productSkus!.includes(s)));
-      return matchesSearch && matchesShotType && matchesTags && matchesSkus;
+      const matchesOrientation =
+        orientationFilter === "all" ||
+        (orientationFilter === "horizontal" && clip.width >= clip.height) ||
+        (orientationFilter === "vertical" && clip.height > clip.width);
+      return matchesSearch && matchesShotType && matchesTags && matchesSkus && matchesOrientation;
     });
-  }, [clips, search, selectedShotTypes, selectedTags, selectedSkus, collectionClipIds]);
+  }, [clips, search, selectedShotTypes, selectedTags, selectedSkus, collectionClipIds, orientationFilter]);
 
   const toggleShotType = useCallback((type: string) => {
     setSelectedShotTypes((prev) => {
@@ -347,6 +352,7 @@ export default function ClientDetailPage() {
     setSelectedTags(new Set());
     setSelectedSkus(new Set());
     setSearch("");
+    setOrientationFilter("all");
     setActiveCollectionId(null);
     setCollectionClipIds(null);
   }, []);
@@ -631,14 +637,49 @@ export default function ClientDetailPage() {
               />
             )}
 
+            {/* Orientation filter */}
+            <div className="flex items-center bg-surface border border-border rounded-lg p-0.5">
+              <button
+                onClick={() => setOrientationFilter("all")}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  orientationFilter === "all" ? "bg-accent text-white" : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setOrientationFilter("horizontal")}
+                title="Horizontal / Landscape"
+                className={`px-2 py-1 rounded transition-colors flex items-center gap-1 text-xs font-medium ${
+                  orientationFilter === "horizontal" ? "bg-accent text-white" : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <svg className="w-4 h-3" fill="none" viewBox="0 0 20 14" stroke="currentColor" strokeWidth={1.5}>
+                  <rect x="1" y="1" width="18" height="12" rx="2" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setOrientationFilter("vertical")}
+                title="Vertical / Portrait"
+                className={`px-2 py-1 rounded transition-colors flex items-center gap-1 text-xs font-medium ${
+                  orientationFilter === "vertical" ? "bg-accent text-white" : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <svg className="w-3 h-4" fill="none" viewBox="0 0 14 20" stroke="currentColor" strokeWidth={1.5}>
+                  <rect x="1" y="1" width="12" height="18" rx="2" />
+                </svg>
+              </button>
+            </div>
+
             {/* Active filters & clear */}
-            {(selectedShotTypes.size > 0 || selectedTags.size > 0 || selectedSkus.size > 0) && (
+            {(selectedShotTypes.size > 0 || selectedTags.size > 0 || selectedSkus.size > 0 || orientationFilter !== "all") && (
               <>
                 <span className="text-xs text-muted ml-1">
                   {[
                     selectedShotTypes.size > 0 && `${selectedShotTypes.size} shot${selectedShotTypes.size > 1 ? "s" : ""}`,
                     selectedTags.size > 0 && `${selectedTags.size} tag${selectedTags.size > 1 ? "s" : ""}`,
                     selectedSkus.size > 0 && `${selectedSkus.size} SKU${selectedSkus.size > 1 ? "s" : ""}`,
+                    orientationFilter !== "all" && orientationFilter,
                   ].filter(Boolean).join(" + ")}
                 </span>
                 <button
@@ -734,7 +775,7 @@ export default function ClientDetailPage() {
       {filteredClips.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-muted">
-            {search || selectedShotTypes.size > 0 || selectedTags.size > 0 || selectedSkus.size > 0 || activeCollectionId
+            {search || selectedShotTypes.size > 0 || selectedTags.size > 0 || selectedSkus.size > 0 || orientationFilter !== "all" || activeCollectionId
               ? "No clips match your filters"
               : "No clips uploaded yet"}
           </p>
