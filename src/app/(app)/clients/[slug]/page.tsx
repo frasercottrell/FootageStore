@@ -34,6 +34,7 @@ interface Clip {
   shotType?: string | null;
   tags?: string[] | null;
   productSkus?: string[] | null;
+  driveFileId?: string | null;
 }
 
 function FilterDropdown({

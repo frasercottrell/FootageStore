@@ -20,6 +20,7 @@ interface Clip {
   shotType?: string | null;
   tags?: string[] | null;
   productSkus?: string[] | null;
+  driveFileId?: string | null;
   // Legacy fields for backward compat
   status?: string;
   thumbnailPath?: string | null;
@@ -167,8 +168,22 @@ export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, b
           </div>
         )}
 
-        {/* Download button on hover */}
-        <div className="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Action buttons on hover */}
+        <div className="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+          {clip.driveFileId && (
+            <a
+              href={`https://drive.google.com/file/d/${clip.driveFileId}/view`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title="Open in Google Drive"
+              className="w-8 h-8 rounded-full bg-black/70 hover:bg-[#1a73e8] flex items-center justify-center text-white shadow-lg transition-colors"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45zM14.29 3.5H7.71l6.56 11.38h6.58zM16.57 15.88H9.99L6.56 21.83h13.02z" />
+              </svg>
+            </a>
+          )}
           <a
             href={`/api/clips/${clip.id}/download`}
             onClick={(e) => e.stopPropagation()}

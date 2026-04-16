@@ -24,6 +24,7 @@ interface Clip {
   tags?: string[] | null;
   description?: string | null;
   productSkus?: string[] | null;
+  driveFileId?: string | null;
 }
 
 interface ClipDetailModalProps {
@@ -454,6 +455,20 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate }: C
                 </svg>
                 Download Original
               </a>
+
+              {clip.driveFileId && (
+                <a
+                  href={`https://drive.google.com/file/d/${clip.driveFileId}/view`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors w-full"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45zM14.29 3.5H7.71l6.56 11.38h6.58zM16.57 15.88H9.99L6.56 21.83h13.02z" />
+                  </svg>
+                  Open in Google Drive
+                </a>
+              )}
 
               {isAdmin && onDelete && (
                 confirmDelete ? (

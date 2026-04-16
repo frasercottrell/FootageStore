@@ -20,6 +20,7 @@ interface Clip {
   shotType?: string | null;
   tags?: string[] | null;
   productSkus?: string[] | null;
+  driveFileId?: string | null;
 }
 
 export type GridSize = "small" | "medium" | "large";
