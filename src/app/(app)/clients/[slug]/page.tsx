@@ -37,6 +37,15 @@ interface Clip {
   driveFileId?: string | null;
 }
 
+interface Collection {
+  id: string;
+  name: string;
+  description: string | null;
+  clientId: string;
+  clipCount: number;
+  createdAt: string;
+}
+
 function FilterDropdown({
   label,
   options,
@@ -159,6 +168,9 @@ export default function ClientDetailPage() {
   const [selectedClipIds, setSelectedClipIds] = useState<Set<string>>(new Set());
   const bulkMode = selectedClipIds.size > 0;
   const [gridSize, setGridSize] = useState<GridSize>("medium");
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
+  const [collectionClipIds, setCollectionClipIds] = useState<Set<string> | null>(null);
 
   // Persist grid size preference across sessions
   useEffect(() => {
@@ -188,12 +200,42 @@ export default function ClientDetailPage() {
         if (!clipsRes.ok) return;
         const clipsData = await clipsRes.json();
         setClips(clipsData.clips || []);
+
+        // Fetch collections for this client
+        const colRes = await fetch(`/api/collections?clientId=${foundClient.id}`);
+        if (colRes.ok) {
+          const colData = await colRes.json();
+          setCollections(colData.collections || []);
+        }
       } finally {
         setLoading(false);
       }
     }
     fetchData();
   }, [slug]);
+
+  // When a collection is selected, fetch its clip IDs
+  const selectCollection = useCallback(async (collectionId: string | null) => {
+    setActiveCollectionId(collectionId);
+    if (!collectionId) {
+      setCollectionClipIds(null);
+      return;
+    }
+    const res = await fetch(`/api/collections/${collectionId}/clips`);
+    if (res.ok) {
+      const data = await res.json();
+      setCollectionClipIds(new Set(data.clipIds));
+    }
+  }, []);
+
+  const refreshCollections = useCallback(async () => {
+    if (!client) return;
+    const res = await fetch(`/api/collections?clientId=${client.id}`);
+    if (res.ok) {
+      const data = await res.json();
+      setCollections(data.collections || []);
+    }
+  }, [client]);
 
   // Get unique shot types from clips for filter chips
   const shotTypes = useMemo(() => {
@@ -233,16 +275,15 @@ export default function ClientDetailPage() {
   }, [clips]);
 
   const filteredClips = useMemo(() => {
-    // Build search terms: split on whitespace, drop empties, lowercase.
-    // Every term must appear somewhere in the haystack (AND semantics),
-    // so "product on screen" matches clips whose description mentions
-    // the product being on screen.
     const searchTerms = search
       .toLowerCase()
       .split(/\s+/)
       .filter(Boolean);
 
     return clips.filter((clip) => {
+      // Collection filter
+      if (collectionClipIds && !collectionClipIds.has(clip.id)) return false;
+
       let matchesSearch = true;
       if (searchTerms.length > 0) {
         const haystack = [
@@ -266,7 +307,7 @@ export default function ClientDetailPage() {
         (clip.productSkus && Array.from(selectedSkus).every((s) => clip.productSkus!.includes(s)));
       return matchesSearch && matchesShotType && matchesTags && matchesSkus;
     });
-  }, [clips, search, selectedShotTypes, selectedTags, selectedSkus]);
+  }, [clips, search, selectedShotTypes, selectedTags, selectedSkus, collectionClipIds]);
 
   const toggleShotType = useCallback((type: string) => {
     setSelectedShotTypes((prev) => {
@@ -306,6 +347,8 @@ export default function ClientDetailPage() {
     setSelectedTags(new Set());
     setSelectedSkus(new Set());
     setSearch("");
+    setActiveCollectionId(null);
+    setCollectionClipIds(null);
   }, []);
 
   const handleSelect = useCallback((clip: Clip) => {
@@ -427,6 +470,43 @@ export default function ClientDetailPage() {
       setSelectedClipIds(new Set());
     }
   }, [selectedClipIds]);
+
+  const handleBulkAddToCollection = useCallback(async (collectionId: string) => {
+    const clipIds = Array.from(selectedClipIds);
+    const res = await fetch(`/api/collections/${collectionId}/clips`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clipIds }),
+    });
+    if (res.ok) {
+      await refreshCollections();
+      // If viewing this collection, refresh the clip IDs
+      if (activeCollectionId === collectionId) {
+        const r = await fetch(`/api/collections/${collectionId}/clips`);
+        if (r.ok) {
+          const d = await r.json();
+          setCollectionClipIds(new Set(d.clipIds));
+        }
+      }
+    }
+    return res.ok;
+  }, [selectedClipIds, refreshCollections, activeCollectionId]);
+
+  const handleCreateCollection = useCallback(async (name: string): Promise<string | null> => {
+    if (!client) return null;
+    const clipIds = Array.from(selectedClipIds);
+    const res = await fetch("/api/collections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, clientId: client.id, clipIds }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      await refreshCollections();
+      return data.collection.id;
+    }
+    return null;
+  }, [client, selectedClipIds, refreshCollections]);
 
   const handleBulkDownload = useCallback(() => {
     const ids = Array.from(selectedClipIds);
@@ -617,10 +697,44 @@ export default function ClientDetailPage() {
           </div>
       </div>
 
+      {/* Collections bar */}
+      {collections.length > 0 && (
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <span className="text-[11px] text-muted uppercase tracking-wider mr-1">Collections</span>
+          <button
+            onClick={() => selectCollection(null)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+              activeCollectionId === null
+                ? "bg-white/10 border-white/20 text-white"
+                : "bg-white/5 border-white/10 text-neutral-400 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            All clips
+          </button>
+          {collections.map((col) => (
+            <button
+              key={col.id}
+              onClick={() => selectCollection(col.id)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border flex items-center gap-1.5 ${
+                activeCollectionId === col.id
+                  ? "bg-purple-500/20 border-purple-500/40 text-purple-300"
+                  : "bg-purple-500/5 border-purple-500/20 text-purple-300/60 hover:text-purple-300 hover:bg-purple-500/15"
+              }`}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              {col.name}
+              <span className="text-[10px] opacity-60">({col.clipCount})</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {filteredClips.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-muted">
-            {search || selectedShotTypes.size > 0 || selectedTags.size > 0 || selectedSkus.size > 0
+            {search || selectedShotTypes.size > 0 || selectedTags.size > 0 || selectedSkus.size > 0 || activeCollectionId
               ? "No clips match your filters"
               : "No clips uploaded yet"}
           </p>
@@ -650,9 +764,12 @@ export default function ClientDetailPage() {
           onBulkRemoveSkus={handleBulkRemoveSkus}
           onBulkSetShotType={handleBulkSetShotType}
           onBulkDelete={handleBulkDelete}
+          onBulkAddToCollection={handleBulkAddToCollection}
+          onCreateCollection={handleCreateCollection}
           onBulkDownload={handleBulkDownload}
           existingTags={allTags.map(([tag]) => tag)}
           existingSkus={allSkus.map(([sku]) => sku)}
+          collections={collections}
           selectedClips={clips.filter((c) => selectedClipIds.has(c.id)).map((c) => ({
             id: c.id,
             tags: c.tags || [],

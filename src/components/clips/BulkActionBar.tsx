@@ -25,13 +25,16 @@ interface BulkActionBarProps {
   onBulkRemoveSkus: (skus: string[]) => Promise<void>;
   onBulkSetShotType: (shotType: string) => Promise<void>;
   onBulkDelete: () => Promise<void>;
+  onBulkAddToCollection: (collectionId: string) => Promise<boolean>;
+  onCreateCollection: (name: string) => Promise<string | null>;
   onBulkDownload: () => void;
   existingTags: string[];
   existingSkus: string[];
   selectedClips: SelectedClipSummary[];
+  collections: { id: string; name: string; clipCount: number }[];
 }
 
-type ActivePanel = null | "tags" | "skus" | "shotType" | "delete";
+type ActivePanel = null | "tags" | "skus" | "shotType" | "delete" | "collection";
 
 // Given a list of clips and a set of known values, compute which values are
 // applied to ALL selected clips ("all"), SOME but not all ("some"), or none.
@@ -63,10 +66,13 @@ export default function BulkActionBar({
   onBulkRemoveSkus,
   onBulkSetShotType,
   onBulkDelete,
+  onBulkAddToCollection,
+  onCreateCollection,
   onBulkDownload,
   existingTags,
   existingSkus,
   selectedClips,
+  collections,
 }: BulkActionBarProps) {
   const tagState = computeAppliedState(existingTags, selectedClips.map((c) => c.tags));
   const skuState = computeAppliedState(existingSkus, selectedClips.map((c) => c.productSkus));
@@ -83,6 +89,7 @@ export default function BulkActionBar({
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const [tagInput, setTagInput] = useState("");
   const [skuInput, setSkuInput] = useState("");
+  const [newCollectionName, setNewCollectionName] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -183,6 +190,39 @@ export default function BulkActionBar({
       setLoading(false);
     }
   }, [onBulkDelete]);
+
+  const handleAddToCollection = useCallback(
+    async (collectionId: string, collectionName: string) => {
+      setLoading(true);
+      try {
+        const ok = await onBulkAddToCollection(collectionId);
+        if (ok) {
+          showToast(`Added to "${collectionName}"`);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onBulkAddToCollection, showToast]
+  );
+
+  const handleCreateAndAdd = useCallback(
+    async () => {
+      const name = newCollectionName.trim();
+      if (!name) return;
+      setLoading(true);
+      try {
+        const id = await onCreateCollection(name);
+        if (id) {
+          setNewCollectionName("");
+          showToast(`Created "${name}" with ${selectedCount} clip${selectedCount > 1 ? "s" : ""}`);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [newCollectionName, onCreateCollection, selectedCount, showToast]
+  );
 
   // Clear the confirmation message when the user switches panels
   useEffect(() => {
@@ -417,6 +457,64 @@ export default function BulkActionBar({
                     );
                   })}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Add to Collection */}
+          <div className="relative">
+            <button
+              onClick={() => setActivePanel(activePanel === "collection" ? null : "collection")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                activePanel === "collection" ? "bg-purple-500 text-white" : "text-neutral-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Collection
+            </button>
+            {activePanel === "collection" && (
+              <div className="absolute bottom-full mb-2 left-0 bg-[#252525] border border-white/10 rounded-xl p-3 shadow-xl w-72">
+                {toastBanner}
+                <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Add {selectedCount} clips to collection</p>
+                {collections.length > 0 && (
+                  <div className="flex flex-col gap-1 mb-2.5 max-h-40 overflow-y-auto">
+                    {collections.map((col) => (
+                      <button
+                        key={col.id}
+                        onClick={() => handleAddToCollection(col.id, col.name)}
+                        disabled={loading}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors disabled:opacity-50 flex items-center justify-between gap-2 text-neutral-300 hover:text-white hover:bg-purple-500/15"
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <svg className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          <span className="truncate">{col.name}</span>
+                        </span>
+                        <span className="text-[10px] text-neutral-500 flex-shrink-0">{col.clipCount} clips</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <form onSubmit={(e) => { e.preventDefault(); handleCreateAndAdd(); }} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCollectionName}
+                    onChange={(e) => setNewCollectionName(e.target.value)}
+                    placeholder="+ New collection..."
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || !newCollectionName.trim()}
+                    className="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
+                  >
+                    {loading ? "..." : "Create"}
+                  </button>
+                </form>
               </div>
             )}
           </div>

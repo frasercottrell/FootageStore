@@ -9,6 +9,7 @@ import {
   real,
   pgEnum,
   jsonb,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("user_role", ["admin", "editor"]);
@@ -65,3 +66,29 @@ export const clips = pgTable("clips", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const collections = pgTable("collections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const collectionClips = pgTable(
+  "collection_clips",
+  {
+    collectionId: uuid("collection_id")
+      .notNull()
+      .references(() => collections.id, { onDelete: "cascade" }),
+    clipId: uuid("clip_id")
+      .notNull()
+      .references(() => clips.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at").defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.collectionId, t.clipId] })]
+);
