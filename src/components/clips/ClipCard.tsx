@@ -28,12 +28,21 @@ interface Clip {
   fileSize?: number;
 }
 
+interface CollectionSummary {
+  id: string;
+  name: string;
+  clipCount: number;
+}
+
 interface ClipCardProps {
   clip: Clip;
   onSelect: (clip: Clip) => void;
   isSelected?: boolean;
   onToggleSelect?: (clipId: string) => void;
   bulkMode?: boolean;
+  collections?: CollectionSummary[];
+  onAddToCollection?: (clipId: string, collectionId: string) => Promise<void>;
+  onCreateCollection?: (clipId: string, name: string) => Promise<void>;
 }
 
 function formatDuration(seconds: number): string {
@@ -51,9 +60,12 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, bulkMode }: ClipCardProps) {
+export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, bulkMode, collections, onAddToCollection, onCreateCollection }: ClipCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [skimPercent, setSkimPercent] = useState<number | null>(null);
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+  const [newColName, setNewColName] = useState("");
+  const collectionPickerRef = useRef<HTMLDivElement>(null);
 
   const hasThumbnail = clip.hasThumbnail || !!clip.thumbnailPath;
   const hasSpriteSheet = clip.hasSpriteSheet || !!clip.spriteSheetPath;
@@ -170,6 +182,78 @@ export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, b
 
         {/* Action buttons on hover */}
         <div className="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+          {/* Add to collection */}
+          {collections && collections.length > 0 && onAddToCollection && (
+            <div className="relative" ref={collectionPickerRef}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowCollectionPicker(!showCollectionPicker); }}
+                title="Add to collection"
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-white shadow-lg transition-colors ${
+                  showCollectionPicker ? "bg-purple-500" : "bg-black/70 hover:bg-purple-500"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </button>
+              {showCollectionPicker && (
+                <div
+                  className="absolute bottom-full mb-2 right-0 bg-[#252525] border border-white/10 rounded-xl p-2 shadow-xl w-52 z-30"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-[10px] text-muted uppercase tracking-wider px-1.5 mb-1.5">Add to collection</p>
+                  <div className="flex flex-col gap-0.5 max-h-36 overflow-y-auto mb-1.5">
+                    {collections.map((col) => (
+                      <button
+                        key={col.id}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await onAddToCollection(clip.id, col.id);
+                          setShowCollectionPicker(false);
+                        }}
+                        className="w-full text-left px-2 py-1 rounded text-xs text-neutral-300 hover:text-white hover:bg-purple-500/15 transition-colors truncate flex items-center gap-1.5"
+                      >
+                        <svg className="w-3 h-3 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        <span className="truncate">{col.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {onCreateCollection && (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const name = newColName.trim();
+                        if (!name) return;
+                        await onCreateCollection(clip.id, name);
+                        setNewColName("");
+                        setShowCollectionPicker(false);
+                      }}
+                      className="flex gap-1"
+                    >
+                      <input
+                        type="text"
+                        value={newColName}
+                        onChange={(e) => setNewColName(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="+ New..."
+                        className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-[11px] text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 min-w-0"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newColName.trim()}
+                        className="px-2 py-1 bg-purple-500 hover:bg-purple-600 disabled:opacity-40 text-white rounded text-[11px] font-medium transition-colors flex-shrink-0"
+                      >
+                        Add
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {clip.driveFileId && (
             <a
               href={`https://drive.google.com/file/d/${clip.driveFileId}/view`}

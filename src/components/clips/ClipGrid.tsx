@@ -25,6 +25,12 @@ interface Clip {
 
 export type GridSize = "small" | "medium" | "large";
 
+interface CollectionSummary {
+  id: string;
+  name: string;
+  clipCount: number;
+}
+
 interface ClipGridProps {
   clips: Clip[];
   onSelect: (clip: Clip) => void;
@@ -32,6 +38,9 @@ interface ClipGridProps {
   onToggleSelect?: (clipId: string) => void;
   bulkMode?: boolean;
   size?: GridSize;
+  collections?: CollectionSummary[];
+  onAddToCollection?: (clipId: string, collectionId: string) => Promise<void>;
+  onCreateCollection?: (clipId: string, name: string) => Promise<void>;
 }
 
 // Tailwind needs full class names in source for the JIT compiler,
@@ -48,7 +57,7 @@ const SIZE_MARGIN: Record<GridSize, string> = {
   large: "mb-5",
 };
 
-export default function ClipGrid({ clips, onSelect, selectedIds, onToggleSelect, bulkMode, size = "medium" }: ClipGridProps) {
+export default function ClipGrid({ clips, onSelect, selectedIds, onToggleSelect, bulkMode, size = "medium", collections, onAddToCollection, onCreateCollection }: ClipGridProps) {
   return (
     <div className={SIZE_CLASSES[size]}>
       {clips.map((clip) => (
@@ -59,6 +68,9 @@ export default function ClipGrid({ clips, onSelect, selectedIds, onToggleSelect,
             isSelected={selectedIds?.has(clip.id)}
             onToggleSelect={onToggleSelect}
             bulkMode={bulkMode}
+            collections={collections}
+            onAddToCollection={onAddToCollection}
+            onCreateCollection={onCreateCollection}
           />
         </div>
       ))}

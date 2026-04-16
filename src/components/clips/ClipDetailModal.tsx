@@ -27,11 +27,21 @@ interface Clip {
   driveFileId?: string | null;
 }
 
+interface CollectionSummary {
+  id: string;
+  name: string;
+  clipCount: number;
+}
+
 interface ClipDetailModalProps {
   clip: Clip;
   onClose: () => void;
   onDelete?: (clipId: string) => void;
   onUpdate?: (clipId: string, updates: Partial<Clip>) => void;
+  collections?: CollectionSummary[];
+  onAddToCollection?: (clipId: string, collectionId: string) => Promise<void>;
+  onRemoveFromCollection?: (clipId: string, collectionId: string) => Promise<void>;
+  onCreateCollection?: (clipId: string, name: string) => Promise<void>;
 }
 
 function formatDuration(seconds: number): string {
@@ -60,7 +70,7 @@ function formatDate(dateStr: string | undefined): string {
   });
 }
 
-export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate }: ClipDetailModalProps) {
+export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate, collections, onAddToCollection, onRemoveFromCollection, onCreateCollection }: ClipDetailModalProps) {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -69,6 +79,8 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate }: C
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [newShotType, setNewShotType] = useState("");
+  const [clipCollectionIds, setClipCollectionIds] = useState<Set<string>>(new Set());
+  const [newCollectionName, setNewCollectionName] = useState("");
   const [localTags, setLocalTags] = useState<string[]>(clip.tags || []);
   const [localShotType, setLocalShotType] = useState<string>(clip.shotType || "");
   const [localSkus, setLocalSkus] = useState<string[]>(clip.productSkus || []);
@@ -141,6 +153,19 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate }: C
   const removeSku = useCallback((sku: string) => {
     saveSkus(localSkus.filter((s) => s !== sku));
   }, [localSkus, saveSkus]);
+
+  // Fetch which collections this clip belongs to (single query)
+  useEffect(() => {
+    if (!collections || collections.length === 0) return;
+    async function fetchMemberships() {
+      const res = await fetch(`/api/clips/${clip.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setClipCollectionIds(new Set(data.collectionIds || []));
+      }
+    }
+    fetchMemberships();
+  }, [clip.id, collections]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -366,6 +391,74 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate }: C
                 </form>
               </div>
             </div>
+
+            {/* Collections */}
+            {collections && collections.length > 0 && (
+              <div>
+                <p className="text-[11px] text-muted uppercase tracking-wider mb-1.5">Collections</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {collections.filter((col) => clipCollectionIds.has(col.id)).map((col) => (
+                    <span
+                      key={col.id}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/15 text-purple-300 rounded-full text-xs font-medium"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      {col.name}
+                      {onRemoveFromCollection && (
+                        <button
+                          onClick={async () => {
+                            await onRemoveFromCollection(clip.id, col.id);
+                            setClipCollectionIds((prev) => { const next = new Set(prev); next.delete(col.id); return next; });
+                          }}
+                          className="text-purple-400/60 hover:text-red-400 transition-colors"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                  {/* Add to collection buttons for ones clip is NOT in */}
+                  {collections.filter((col) => !clipCollectionIds.has(col.id)).map((col) => (
+                    <button
+                      key={col.id}
+                      onClick={async () => {
+                        if (onAddToCollection) {
+                          await onAddToCollection(clip.id, col.id);
+                          setClipCollectionIds((prev) => new Set([...prev, col.id]));
+                        }
+                      }}
+                      className="px-2 py-0.5 rounded-full text-xs font-medium transition-colors bg-white/5 text-neutral-500 hover:text-purple-300 hover:bg-purple-500/10"
+                    >
+                      {col.name}
+                    </button>
+                  ))}
+                  {onCreateCollection && (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const name = newCollectionName.trim();
+                        if (!name) return;
+                        await onCreateCollection(clip.id, name);
+                        setNewCollectionName("");
+                      }}
+                      className="inline-flex"
+                    >
+                      <input
+                        type="text"
+                        value={newCollectionName}
+                        onChange={(e) => setNewCollectionName(e.target.value)}
+                        placeholder="+ New collection"
+                        className="bg-transparent border border-dashed border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-purple-500 w-28"
+                      />
+                    </form>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Metadata box */}
             <div className="border border-white/10 rounded-xl p-4 space-y-3">

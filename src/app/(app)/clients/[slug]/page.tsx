@@ -528,6 +528,45 @@ export default function ClientDetailPage() {
     });
   }, [selectedClipIds]);
 
+  // Single-clip collection handlers (used by ClipCard + ClipDetailModal)
+  const handleAddClipToCollection = useCallback(async (clipId: string, collectionId: string) => {
+    await fetch(`/api/collections/${collectionId}/clips`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clipIds: [clipId] }),
+    });
+    await refreshCollections();
+  }, [refreshCollections]);
+
+  const handleCreateCollectionForClip = useCallback(async (clipId: string, name: string) => {
+    if (!client) return;
+    const res = await fetch("/api/collections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, clientId: client.id, clipIds: [clipId] }),
+    });
+    if (res.ok) {
+      await refreshCollections();
+    }
+  }, [client, refreshCollections]);
+
+  const handleRemoveClipFromCollection = useCallback(async (clipId: string, collectionId: string) => {
+    await fetch(`/api/collections/${collectionId}/clips`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clipIds: [clipId] }),
+    });
+    await refreshCollections();
+    // Refresh the active collection view if needed
+    if (activeCollectionId === collectionId) {
+      const r = await fetch(`/api/collections/${collectionId}/clips`);
+      if (r.ok) {
+        const d = await r.json();
+        setCollectionClipIds(new Set(d.clipIds));
+      }
+    }
+  }, [refreshCollections, activeCollectionId]);
+
   if (loading) {
     return (
       <div className="p-8">
@@ -789,6 +828,9 @@ export default function ClientDetailPage() {
             onToggleSelect={toggleClipSelection}
             bulkMode={bulkMode}
             size={gridSize}
+            collections={collections}
+            onAddToCollection={handleAddClipToCollection}
+            onCreateCollection={handleCreateCollectionForClip}
           />
         </div>
       )}
@@ -834,6 +876,10 @@ export default function ClientDetailPage() {
             );
             setSelectedClip((prev) => prev ? { ...prev, ...updates } : prev);
           }}
+          collections={collections}
+          onAddToCollection={handleAddClipToCollection}
+          onRemoveFromCollection={handleRemoveClipFromCollection}
+          onCreateCollection={handleCreateCollectionForClip}
         />
       )}
     </div>

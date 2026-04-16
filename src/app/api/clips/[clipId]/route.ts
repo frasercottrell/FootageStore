@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { clips } from "@/lib/db/schema";
+import { clips, collectionClips } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
@@ -27,7 +27,16 @@ export async function GET(
     return NextResponse.json({ error: "Clip not found" }, { status: 404 });
   }
 
-  return NextResponse.json(clip);
+  // Also fetch collection memberships
+  const memberships = await db
+    .select({ collectionId: collectionClips.collectionId })
+    .from(collectionClips)
+    .where(eq(collectionClips.clipId, clipId));
+
+  return NextResponse.json({
+    ...clip,
+    collectionIds: memberships.map((m) => m.collectionId),
+  });
 }
 
 export async function PATCH(
