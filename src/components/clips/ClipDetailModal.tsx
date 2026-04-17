@@ -316,7 +316,7 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate, col
                     value={newShotType}
                     onChange={(e) => setNewShotType(e.target.value)}
                     placeholder="+ Custom"
-                    className="bg-transparent border border-dashed border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-accent w-20"
+                    className="bg-white/5 border border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-accent focus:bg-white/10 focus:ring-1 focus:ring-accent/40 w-20 transition-colors"
                   />
                 </form>
               </div>
@@ -351,7 +351,7 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate, col
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="+ Add tag"
-                    className="bg-transparent border border-dashed border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-accent w-24"
+                    className="bg-white/5 border border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-accent focus:bg-white/10 focus:ring-1 focus:ring-accent/40 w-24 transition-colors"
                   />
                 </form>
               </div>
@@ -386,7 +386,7 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate, col
                     value={newSku}
                     onChange={(e) => setNewSku(e.target.value)}
                     placeholder="+ Add SKU"
-                    className="bg-transparent border border-dashed border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500 w-24 uppercase"
+                    className="bg-white/5 border border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 focus:bg-white/10 focus:ring-1 focus:ring-emerald-500/40 w-24 uppercase transition-colors"
                   />
                 </form>
               </div>
@@ -396,6 +396,9 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate, col
             {collections && collections.length > 0 && (
               <div>
                 <p className="text-[11px] text-muted uppercase tracking-wider mb-1.5">Collections</p>
+                {clipCollectionIds.size === 0 && (
+                  <p className="text-[11px] text-neutral-500 mb-1.5 italic">Not in any collection yet — pick one below.</p>
+                )}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {collections.filter((col) => clipCollectionIds.has(col.id)).map((col) => (
                     <span
@@ -452,7 +455,7 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate, col
                         value={newCollectionName}
                         onChange={(e) => setNewCollectionName(e.target.value)}
                         placeholder="+ New collection"
-                        className="bg-transparent border border-dashed border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-purple-500 w-28"
+                        className="bg-white/5 border border-white/10 rounded-full px-2.5 py-0.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 focus:ring-1 focus:ring-purple-500/40 w-28 transition-colors"
                       />
                     </form>
                   )}
@@ -462,26 +465,25 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate, col
 
             {/* Metadata box */}
             <div className="border border-white/10 rounded-xl p-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
                 <div>
                   <p className="text-[11px] text-muted uppercase tracking-wider">Duration</p>
                   <p className="text-sm text-white mt-0.5">{formatDuration(clip.duration)}</p>
                 </div>
                 <div>
                   <p className="text-[11px] text-muted uppercase tracking-wider">Resolution</p>
-                  <p className="text-sm text-white mt-0.5">{clip.width} x {clip.height}</p>
+                  <p className="text-sm text-white mt-0.5">{clip.width} × {clip.height}</p>
                 </div>
                 <div>
                   <p className="text-[11px] text-muted uppercase tracking-wider">File Size</p>
                   <p className="text-sm text-white mt-0.5">{formatBytes(sizeBytes)}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted uppercase tracking-wider">Codec</p>
-                  <p className="text-sm text-white mt-0.5">{clip.codec || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-muted uppercase tracking-wider">FPS</p>
-                  <p className="text-sm text-white mt-0.5">{clip.fps ? `${clip.fps}` : "-"}</p>
+                  <p className="text-[11px] text-muted uppercase tracking-wider">Codec · FPS</p>
+                  <p className="text-sm text-white mt-0.5">
+                    {clip.codec || "-"}
+                    {clip.fps ? <span className="text-muted"> · {clip.fps}fps</span> : null}
+                  </p>
                 </div>
               </div>
 
@@ -495,14 +497,18 @@ export default function ClipDetailModal({ clip, onClose, onDelete, onUpdate, col
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
-                      className="text-[11px] text-muted hover:text-white transition-colors flex items-center gap-1"
+                      className={`text-[11px] flex items-center gap-1 px-2 py-0.5 rounded-md transition-all ${
+                        copied
+                          ? "bg-green-500/20 text-green-300 ring-1 ring-green-500/40"
+                          : "text-muted hover:text-white hover:bg-white/5"
+                      }`}
                     >
                       {copied ? (
                         <>
-                          <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
-                          <span className="text-green-400">Copied</span>
+                          <span className="font-medium">Copied</span>
                         </>
                       ) : (
                         <>
