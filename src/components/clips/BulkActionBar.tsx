@@ -230,17 +230,16 @@ export default function BulkActionBar({
     setToast(null);
   }, [activePanel]);
 
-  const toastBanner = toast ? (
-    <div className="mb-2.5 flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-medium px-2.5 py-1.5 rounded-lg">
-      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
-      <span className="truncate">{toast}</span>
-    </div>
-  ) : null;
-
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-4 duration-200">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-4 duration-200 flex flex-col items-center gap-2">
+      {toast && (
+        <div className="inline-flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium px-3 py-1.5 rounded-full shadow-lg shadow-black/30 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <span className="truncate max-w-[60ch]">{toast}</span>
+        </div>
+      )}
       <div className="bg-[#1e1e1e] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 backdrop-blur-xl px-5 py-3 flex items-center gap-4">
         {/* Selection count */}
         <div className="flex items-center gap-3 border-r border-white/10 pr-4">
@@ -273,7 +272,6 @@ export default function BulkActionBar({
             </button>
             {activePanel === "tags" && (
               <div className="absolute bottom-full mb-2 left-0 bg-[#252525] border border-white/10 rounded-xl p-3 shadow-xl w-72">
-                {toastBanner}
                 <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Add tags to {selectedCount} clips</p>
                 {existingTags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2.5 max-h-32 overflow-y-auto">
@@ -286,25 +284,37 @@ export default function BulkActionBar({
                           disabled={loading}
                           title={
                             applied === "all"
-                              ? `Click to remove from all ${selectedCount} clips`
+                              ? `On all ${selectedCount} — click to remove`
                               : applied === "some"
-                                ? `On some clips — click to add to all`
+                                ? `On some — click to add to all ${selectedCount}`
                                 : `Click to add to ${selectedCount} clips`
                           }
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
+                          className={`group/pill relative px-2.5 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
                             applied === "all"
-                              ? "bg-accent text-white"
+                              ? "bg-accent text-white hover:bg-red-500"
                               : applied === "some"
-                                ? "bg-accent/20 text-accent border border-accent/40"
+                                ? "bg-accent/20 text-accent border border-accent/40 hover:bg-accent hover:text-white hover:border-accent"
                                 : "bg-white/5 text-neutral-400 hover:text-white hover:bg-accent"
                           }`}
                         >
                           {applied === "all" && (
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
+                            <>
+                              <svg className="w-3 h-3 group-hover/pill:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                              <svg className="w-3 h-3 hidden group-hover/pill:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </>
                           )}
-                          {applied === "some" && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                          {applied === "some" && (
+                            <>
+                              <span className="w-1.5 h-1.5 rounded-full bg-accent group-hover/pill:hidden" />
+                              <svg className="w-3 h-3 hidden group-hover/pill:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
+                            </>
+                          )}
                           {tag}
                         </button>
                       );
@@ -347,7 +357,6 @@ export default function BulkActionBar({
             </button>
             {activePanel === "skus" && (
               <div className="absolute bottom-full mb-2 left-0 bg-[#252525] border border-white/10 rounded-xl p-3 shadow-xl w-72">
-                {toastBanner}
                 <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Add SKUs to {selectedCount} clips</p>
                 {existingSkus.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2.5 max-h-32 overflow-y-auto">
@@ -360,25 +369,37 @@ export default function BulkActionBar({
                           disabled={loading}
                           title={
                             applied === "all"
-                              ? `Click to remove from all ${selectedCount} clips`
+                              ? `On all ${selectedCount} — click to remove`
                               : applied === "some"
-                                ? `On some clips — click to add to all`
+                                ? `On some — click to add to all ${selectedCount}`
                                 : `Click to add to ${selectedCount} clips`
                           }
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
+                          className={`group/pill relative px-2.5 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
                             applied === "all"
-                              ? "bg-emerald-500 text-white"
+                              ? "bg-emerald-500 text-white hover:bg-red-500"
                               : applied === "some"
-                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/50"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500 hover:text-white hover:border-emerald-500"
                                 : "bg-emerald-500/10 text-emerald-400 hover:text-white hover:bg-emerald-500"
                           }`}
                         >
                           {applied === "all" && (
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
+                            <>
+                              <svg className="w-3 h-3 group-hover/pill:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                              <svg className="w-3 h-3 hidden group-hover/pill:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </>
                           )}
-                          {applied === "some" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                          {applied === "some" && (
+                            <>
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 group-hover/pill:hidden" />
+                              <svg className="w-3 h-3 hidden group-hover/pill:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
+                            </>
+                          )}
                           {sku}
                         </button>
                       );
@@ -420,8 +441,7 @@ export default function BulkActionBar({
               Shot Type
             </button>
             {activePanel === "shotType" && (
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-[#252525] border border-white/10 rounded-xl p-3 shadow-xl w-56">
-                {toastBanner}
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-[#252525] border border-white/10 rounded-xl p-3 shadow-xl w-80">
                 <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Set shot type for {selectedCount} clips</p>
                 <div className="flex flex-wrap gap-1.5">
                   {SHOT_TYPES.map((type) => {
@@ -476,7 +496,6 @@ export default function BulkActionBar({
             </button>
             {activePanel === "collection" && (
               <div className="absolute bottom-full mb-2 left-0 bg-[#252525] border border-white/10 rounded-xl p-3 shadow-xl w-72">
-                {toastBanner}
                 <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Add {selectedCount} clips to collection</p>
                 {collections.length > 0 && (
                   <div className="flex flex-col gap-1 mb-2.5 max-h-40 overflow-y-auto">

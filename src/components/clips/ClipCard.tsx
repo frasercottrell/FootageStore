@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
 interface Clip {
   id: string;
@@ -65,7 +65,25 @@ export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, b
   const [skimPercent, setSkimPercent] = useState<number | null>(null);
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [newColName, setNewColName] = useState("");
+  const [thumbLoaded, setThumbLoaded] = useState(false);
   const collectionPickerRef = useRef<HTMLDivElement>(null);
+  const collectionListRef = useRef<HTMLDivElement>(null);
+  const [collectionListScrollable, setCollectionListScrollable] = useState(false);
+  const [collectionListAtBottom, setCollectionListAtBottom] = useState(false);
+
+  useEffect(() => {
+    if (!showCollectionPicker) return;
+    const el = collectionListRef.current;
+    if (!el) return;
+    const update = () => {
+      const scrollable = el.scrollHeight > el.clientHeight + 1;
+      setCollectionListScrollable(scrollable);
+      setCollectionListAtBottom(el.scrollTop + el.clientHeight >= el.scrollHeight - 1);
+    };
+    update();
+    el.addEventListener("scroll", update);
+    return () => el.removeEventListener("scroll", update);
+  }, [showCollectionPicker, collections?.length]);
 
   const hasThumbnail = clip.hasThumbnail || !!clip.thumbnailPath;
   const hasSpriteSheet = clip.hasSpriteSheet || !!clip.spriteSheetPath;
@@ -130,19 +148,19 @@ export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, b
         )}
 
         {/* Base thumbnail or gradient placeholder */}
-        {hasThumbnail ? (
+        <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
+          <svg className="w-8 h-8 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+        </div>
+        {hasThumbnail && (
           <img
             src={`/api/assets/${clip.id}/thumbnail.jpg`}
             alt={clip.name || clip.originalFilename}
-            className="absolute inset-0 w-full h-full object-cover"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${thumbLoaded ? "opacity-100" : "opacity-0"}`}
             loading="lazy"
+            onLoad={() => setThumbLoaded(true)}
           />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
-            <svg className="w-8 h-8 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-            </svg>
-          </div>
         )}
 
         {/* Sprite sheet overlay on hover */}
@@ -152,10 +170,13 @@ export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, b
 
         {/* Skim progress bar */}
         {skimPercent !== null && (
-          <div
-            className="absolute bottom-0 left-0 h-[3px] bg-accent z-10"
-            style={{ width: `${skimPercent * 100}%` }}
-          />
+          <>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40 z-10" />
+            <div
+              className="absolute bottom-0 left-0 h-1 bg-accent shadow-[0_0_6px_rgba(59,130,246,0.7)] z-10"
+              style={{ width: `${skimPercent * 100}%` }}
+            />
+          </>
         )}
 
         {/* Duration badge — hide for images */}
@@ -202,23 +223,31 @@ export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, b
                   onClick={(e) => e.stopPropagation()}
                 >
                   <p className="text-[10px] text-muted uppercase tracking-wider px-1.5 mb-1.5">Add to collection</p>
-                  <div className="flex flex-col gap-0.5 max-h-36 overflow-y-auto mb-1.5">
-                    {collections.map((col) => (
-                      <button
-                        key={col.id}
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          await onAddToCollection(clip.id, col.id);
-                          setShowCollectionPicker(false);
-                        }}
-                        className="w-full text-left px-2 py-1 rounded text-xs text-neutral-300 hover:text-white hover:bg-purple-500/15 transition-colors truncate flex items-center gap-1.5"
-                      >
-                        <svg className="w-3 h-3 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        <span className="truncate">{col.name}</span>
-                      </button>
-                    ))}
+                  <div className="relative mb-1.5">
+                    <div
+                      ref={collectionListRef}
+                      className="flex flex-col gap-0.5 max-h-36 overflow-y-auto"
+                    >
+                      {collections.map((col) => (
+                        <button
+                          key={col.id}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await onAddToCollection(clip.id, col.id);
+                            setShowCollectionPicker(false);
+                          }}
+                          className="w-full text-left px-2 py-1 rounded text-xs text-neutral-300 hover:text-white hover:bg-purple-500/15 transition-colors truncate flex items-center gap-1.5"
+                        >
+                          <svg className="w-3 h-3 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          <span className="truncate">{col.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {collectionListScrollable && !collectionListAtBottom && (
+                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[#252525] to-transparent rounded-b" />
+                    )}
                   </div>
                   {onCreateCollection && (
                     <form
@@ -271,6 +300,8 @@ export default function ClipCard({ clip, onSelect, isSelected, onToggleSelect, b
           <a
             href={`/api/clips/${clip.id}/download`}
             onClick={(e) => e.stopPropagation()}
+            title="Download original"
+            aria-label="Download original"
             className="w-8 h-8 rounded-full bg-black/70 hover:bg-accent flex items-center justify-center text-white shadow-lg transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
