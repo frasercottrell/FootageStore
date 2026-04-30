@@ -1,25 +1,88 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
+  --color-accent: #C60D60;
+  --color-accent-hover: #9B0A4B;
+  /* Light mode defaults — overridden by html[data-theme="dark"] */
+  --color-bg: #F5F5F5;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F0F0F0;
+  --color-border: #E8E8E8;
+  --color-fg: #141414;
+  --color-muted: #6F6F6F;
+}
+
+html[data-theme="dark"] {
   --color-bg: #0a0a0a;
   --color-surface: #141414;
   --color-surface-hover: #1f1f1f;
   --color-border: #232323;
-  --color-accent: #C60D60;
-  --color-accent-hover: #9B0A4B;
+  --color-fg: #e5e5e5;
   --color-muted: #737373;
 }
 
 body {
   background: var(--color-bg);
-  color: #e5e5e5;
+  color: var(--color-fg);
   font-family: "Sora", system-ui, sans-serif;
+  transition: background 0.2s, color 0.2s;
 }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #141414; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-track { background: var(--color-surface); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
 
+/* ── Hub-style tiles for client cards ─────────────────────── */
+.fg-tile {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 16px;
+  padding: 22px;
+  text-decoration: none;
+  color: inherit;
+  min-height: 180px;
+  transition: border-color 0.16s ease, transform 0.16s ease, background 0.2s;
+}
+.fg-tile:hover {
+  border-color: var(--color-fg);
+  transform: translateY(-3px);
+}
+.fg-tile:active { transform: translateY(0); }
+
+.fg-tile-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--color-surface-hover);
+  color: var(--color-fg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.fg-tile:hover .fg-tile-mark {
+  background: #C60D60;
+  color: #fff;
+}
+
+.fg-tile-arrow {
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--color-muted);
+  transition: color 0.14s ease, transform 0.14s ease;
+  line-height: 1;
+}
+.fg-tile:hover .fg-tile-arrow {
+  color: #C60D60;
+  transform: translateX(3px);
+}
+
+/* ── Clip card hover effects ──────────────────────────────── */
 .clip-card .skim-bar {
   position: absolute;
   bottom: 0;

@@ -6,6 +6,7 @@ interface Client {
   id: string;
   name: string;
   slug: string;
+  displayName: string | null;
   clipCount: number;
   totalStorageBytes: number;
   createdAt: string;
@@ -37,6 +38,7 @@ export default function ManageClientsPage() {
   // Editing state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editDisplayName, setEditDisplayName] = useState("");
   const [editError, setEditError] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
 
@@ -91,6 +93,7 @@ export default function ManageClientsPage() {
   const startEditing = (client: Client) => {
     setEditingId(client.id);
     setEditName(client.name);
+    setEditDisplayName(client.displayName || "");
     setEditError("");
     setConfirmDeleteId(null);
   };
@@ -98,6 +101,7 @@ export default function ManageClientsPage() {
   const cancelEditing = () => {
     setEditingId(null);
     setEditName("");
+    setEditDisplayName("");
     setEditError("");
   };
 
@@ -110,7 +114,7 @@ export default function ManageClientsPage() {
       const res = await fetch(`/api/clients/${clientId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName.trim() }),
+        body: JSON.stringify({ name: editName.trim(), displayName: editDisplayName.trim() || null }),
       });
 
       if (!res.ok) {
@@ -214,7 +218,7 @@ export default function ManageClientsPage() {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-5 py-3">
-                  Name
+                  Name / Display Name
                 </th>
                 <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-5 py-3">
                   Clips
@@ -235,41 +239,59 @@ export default function ManageClientsPage() {
                 <tr key={client.id} className="hover:bg-surface-hover transition-colors group">
                   <td className="px-5 py-3.5">
                     {editingId === client.id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleSaveEdit(client.id);
-                            if (e.key === "Escape") cancelEditing();
-                          }}
-                          className="bg-bg border border-accent rounded-md px-3 py-1 text-sm text-white focus:outline-none w-full max-w-xs"
-                          autoFocus
-                        />
-                        <button
-                          onClick={() => handleSaveEdit(client.id)}
-                          disabled={editSubmitting || !editName.trim()}
-                          className="text-accent hover:text-accent-hover disabled:opacity-50 p-1"
-                          title="Save"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={cancelEditing}
-                          className="text-muted hover:text-white p-1"
-                          title="Cancel"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Escape") cancelEditing(); }}
+                            className="bg-bg border border-accent rounded-md px-3 py-1 text-sm text-white focus:outline-none w-full max-w-xs"
+                            placeholder="Brand slug name"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editDisplayName}
+                            onChange={(e) => setEditDisplayName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveEdit(client.id);
+                              if (e.key === "Escape") cancelEditing();
+                            }}
+                            className="bg-bg border border-border rounded-md px-3 py-1 text-sm text-white focus:outline-none w-full max-w-xs"
+                            placeholder="Display name (optional)"
+                          />
+                          <button
+                            onClick={() => handleSaveEdit(client.id)}
+                            disabled={editSubmitting || !editName.trim()}
+                            className="text-accent hover:text-accent-hover disabled:opacity-50 p-1"
+                            title="Save"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="text-muted hover:text-white p-1"
+                            title="Cancel"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
                         {editError && <span className="text-red-400 text-xs">{editError}</span>}
                       </div>
                     ) : (
-                      <span className="text-sm text-white font-medium">{client.name}</span>
+                      <div>
+                        <span className="text-sm text-white font-medium">{client.displayName || client.name}</span>
+                        {client.displayName && (
+                          <p className="text-xs text-muted mt-0.5">{client.name}</p>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="px-5 py-3.5">

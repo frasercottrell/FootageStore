@@ -14,6 +14,7 @@ export async function GET() {
       id: clients.id,
       name: clients.name,
       slug: clients.slug,
+      displayName: clients.displayName,
       createdAt: clients.createdAt,
       updatedAt: clients.updatedAt,
       clipCount: count(clips.id),

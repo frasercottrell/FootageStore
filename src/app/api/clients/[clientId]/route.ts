@@ -38,6 +38,9 @@ export async function PATCH(
   const { clientId } = await params;
   const body = await request.json();
   const name = body.name?.trim();
+  const displayName = body.displayName !== undefined
+    ? (body.displayName?.trim() || null)
+    : undefined;
 
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -60,9 +63,12 @@ export async function PATCH(
     return NextResponse.json({ error: "A client with this name already exists" }, { status: 409 });
   }
 
+  const updateData: Record<string, unknown> = { name, slug, updatedAt: new Date() };
+  if (displayName !== undefined) updateData.displayName = displayName;
+
   const [updated] = await db
     .update(clients)
-    .set({ name, slug, updatedAt: new Date() })
+    .set(updateData)
     .where(eq(clients.id, clientId))
     .returning();
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
+import ThemeToggle from "./ThemeToggle";
 
 const navItems = [
   {
@@ -46,34 +47,41 @@ export default function Sidebar() {
   const [syncResult, setSyncResult] = useState<string | null>(null);
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-56 bg-surface border-r border-border flex flex-col z-20">
-      <div className="px-4 py-3.5 border-b border-border flex items-start justify-between">
+    <aside
+      className="fixed left-0 top-0 bottom-0 w-56 flex flex-col z-20"
+      style={{ background: "#141414", borderRight: "1px solid #232323" }}
+    >
+      <div className="px-4 py-3.5 flex items-start justify-between" style={{ borderBottom: "1px solid #232323" }}>
         <span className="font-bold text-white text-[0.8125rem] uppercase tracking-[0.04em] leading-[1.25]">
           Fraggell<br />Footage Store
         </span>
-        <span className="w-2 h-2 rounded-full bg-accent mt-0.5 flex-shrink-0" />
+        <span className="w-2 h-2 rounded-full mt-0.5 flex-shrink-0" style={{ background: "#C60D60" }} />
       </div>
 
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
         <a
           href="https://hub.fraggell.com"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-surface-hover transition-colors"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
+          style={{ color: "#8F8F8F" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#fff"; (e.currentTarget as HTMLAnchorElement).style.background = "#1f1f1f"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#8F8F8F"; (e.currentTarget as HTMLAnchorElement).style.background = ""; }}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
           Fraggell Hub
         </a>
-        <div className="border-t border-border my-1" />
+        <div style={{ borderTop: "1px solid #232323", margin: "4px 0" }} />
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
               pathname.startsWith(item.href)
-                ? "bg-accent text-white"
-                : "text-neutral-400 hover:text-white hover:bg-surface-hover"
+                ? "text-white"
+                : "text-[#8F8F8F] hover:text-white hover:bg-[#1f1f1f]"
             }`}
+            style={pathname.startsWith(item.href) ? { background: "#C60D60" } : {}}
           >
             {item.icon}
             {item.label}
@@ -83,7 +91,7 @@ export default function Sidebar() {
         {isAdmin && (
           <>
             <div className="pt-4 pb-2">
-              <span className="px-3 text-xs font-semibold text-neutral-600 uppercase tracking-wider">
+              <span className="px-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "#404040" }}>
                 Admin
               </span>
             </div>
@@ -93,8 +101,8 @@ export default function Sidebar() {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                   pathname.startsWith(item.href)
-                    ? "bg-surface-hover text-white"
-                    : "text-neutral-400 hover:text-white hover:bg-surface-hover"
+                    ? "text-white bg-[#1f1f1f]"
+                    : "text-[#8F8F8F] hover:text-white hover:bg-[#1f1f1f]"
                 }`}
               >
                 {item.icon}
@@ -114,9 +122,7 @@ export default function Sidebar() {
                   if (data.clientsRemoved) parts.push(`-${data.clientsRemoved} clients`);
                   if (data.clipsRemoved) parts.push(`-${data.clipsRemoved} clips`);
                   setSyncResult(parts.length > 0 ? parts.join(", ") : "Up to date");
-                  if (parts.length > 0) {
-                    window.location.reload();
-                  }
+                  if (parts.length > 0) window.location.reload();
                   setTimeout(() => setSyncResult(null), 4000);
                 } catch {
                   setSyncResult("Sync failed");
@@ -126,7 +132,8 @@ export default function Sidebar() {
                 }
               }}
               disabled={syncing}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-neutral-400 hover:text-white hover:bg-surface-hover w-full disabled:opacity-50"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[#1f1f1f] w-full disabled:opacity-50"
+              style={{ color: "#8F8F8F" }}
             >
               <svg className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -140,8 +147,9 @@ export default function Sidebar() {
                     ? "bg-red-500/10 border border-red-500/20 text-red-300"
                     : syncResult === "Up to date"
                       ? "bg-white/5 border border-white/10 text-neutral-300"
-                      : "bg-accent/15 border border-accent/30 text-accent"
+                      : "text-[#C60D60]"
                 }`}
+                style={syncResult !== "Sync failed" && syncResult !== "Up to date" ? { background: "rgba(198,13,96,0.15)", border: "1px solid rgba(198,13,96,0.3)" } : {}}
               >
                 <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   {syncResult === "Sync failed" ? (
@@ -157,20 +165,23 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="p-3 border-t border-border">
+      <div className="p-3" style={{ borderTop: "1px solid #232323" }}>
         <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-sm font-semibold">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0" style={{ background: "#C60D60" }}>
             {session?.user?.name?.[0] || "?"}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">{session?.user?.name}</p>
-            <p className="text-xs text-muted truncate capitalize">{session?.user?.role}</p>
+            <p className="text-xs truncate capitalize" style={{ color: "#737373" }}>{session?.user?.role}</p>
           </div>
-          <button onClick={() => signOut()} className="text-muted hover:text-white">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            <button onClick={() => signOut()} style={{ color: "#737373" }} className="hover:text-white transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </aside>

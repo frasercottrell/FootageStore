@@ -17,6 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${sora.className} h-full antialiased`}>
+      <head>
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src="/theme-init.js" />
+      </head>
       <body className="min-h-full">
         <SessionProvider>{children}</SessionProvider>
       </body>
