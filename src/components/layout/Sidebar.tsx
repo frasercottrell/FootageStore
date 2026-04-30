@@ -39,6 +39,15 @@ const adminItems = [
   },
 ];
 
+const monoStyle: React.CSSProperties = {
+  fontFamily: "'Geist Mono', 'SF Mono', monospace",
+  fontSize: "0.6875rem",
+  fontWeight: 500,
+  letterSpacing: "0.1em",
+  textTransform: "uppercase" as const,
+  color: "#6F6F6F",
+};
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -46,65 +55,89 @@ export default function Sidebar() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
 
+  function isActive(href: string) {
+    return pathname === href || pathname.startsWith(href + "/");
+  }
+
   return (
     <aside
       className="fixed left-0 top-0 bottom-0 w-56 flex flex-col z-20"
-      style={{ background: "#141414", borderRight: "1px solid #232323" }}
+      style={{ background: "#141414", borderRight: "1px solid #2A2A2A" }}
     >
-      <div className="px-4 py-3.5 flex items-center" style={{ borderBottom: "1px solid #232323" }}>
-        <span className="font-display font-semibold leading-none" style={{ fontSize: 17, letterSpacing: "-0.015em", color: "#ffffff" }}>Fraggell</span>
+      {/* Brand stamp */}
+      <div className="px-4 py-3.5 flex items-center" style={{ borderBottom: "1px solid #2A2A2A" }}>
+        <span className="font-display font-semibold leading-none" style={{ fontSize: 17, letterSpacing: "-0.015em", color: "#F5F5F5" }}>Fraggell</span>
         <span className="font-display font-semibold leading-none" style={{ fontSize: 17, color: "#C60D60" }}>.</span>
         <span className="font-display font-medium leading-none" style={{ fontSize: 17, letterSpacing: "-0.015em", color: "#8F8F8F" }}>footage</span>
       </div>
 
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+        {/* Hub back link */}
         <a
           href="https://hub.fraggell.com"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
-          style={{ color: "#8F8F8F" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#fff"; (e.currentTarget as HTMLAnchorElement).style.background = "#1f1f1f"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#8F8F8F"; (e.currentTarget as HTMLAnchorElement).style.background = ""; }}
+          className="relative flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+          style={{ color: "#9A9A9A" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = "#F5F5F5"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "#9A9A9A"; }}
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: "#6F6F6F" }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
           Fraggell Hub
         </a>
-        <div style={{ borderTop: "1px solid #232323", margin: "4px 0" }} />
+        <div style={{ height: 1, background: "#2A2A2A", margin: "4px 0" }} />
+
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-              pathname.startsWith(item.href)
-                ? "text-white"
-                : "text-[#8F8F8F] hover:text-white hover:bg-[#1f1f1f]"
-            }`}
-            style={pathname.startsWith(item.href) ? { background: "#C60D60" } : {}}
+            className="relative flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            style={isActive(item.href)
+              ? { background: "#1f1f1f", color: "#F5F5F5" }
+              : { color: "#9A9A9A" }
+            }
+            onMouseEnter={(e) => { if (!isActive(item.href)) { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = "#F5F5F5"; } }}
+            onMouseLeave={(e) => { if (!isActive(item.href)) { e.currentTarget.style.background = ""; e.currentTarget.style.color = "#9A9A9A"; } }}
           >
-            {item.icon}
+            {isActive(item.href) && (
+              <span
+                aria-hidden
+                className="absolute inset-y-1.5 left-0 w-0.5 rounded-full"
+                style={{ background: "#C60D60" }}
+              />
+            )}
+            <span style={{ color: isActive(item.href) ? "#C60D60" : "#6F6F6F" }}>
+              {item.icon}
+            </span>
             {item.label}
           </Link>
         ))}
 
         {isAdmin && (
           <>
-            <div className="pt-4 pb-2">
-              <span className="px-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "#404040" }}>
-                Admin
-              </span>
-            </div>
+            <p style={{ ...monoStyle, paddingTop: "1.25rem", paddingBottom: "0.5rem", paddingLeft: "0.75rem" }}>Admin</p>
             {adminItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  pathname.startsWith(item.href)
-                    ? "text-white bg-[#1f1f1f]"
-                    : "text-[#8F8F8F] hover:text-white hover:bg-[#1f1f1f]"
-                }`}
+                className="relative flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                style={isActive(item.href)
+                  ? { background: "#1f1f1f", color: "#F5F5F5" }
+                  : { color: "#9A9A9A" }
+                }
+                onMouseEnter={(e) => { if (!isActive(item.href)) { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = "#F5F5F5"; } }}
+                onMouseLeave={(e) => { if (!isActive(item.href)) { e.currentTarget.style.background = ""; e.currentTarget.style.color = "#9A9A9A"; } }}
               >
-                {item.icon}
+                {isActive(item.href) && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-1.5 left-0 w-0.5 rounded-full"
+                    style={{ background: "#C60D60" }}
+                  />
+                )}
+                <span style={{ color: isActive(item.href) ? "#C60D60" : "#6F6F6F" }}>
+                  {item.icon}
+                </span>
                 {item.label}
               </Link>
             ))}
@@ -131,10 +164,12 @@ export default function Sidebar() {
                 }
               }}
               disabled={syncing}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[#1f1f1f] w-full disabled:opacity-50"
-              style={{ color: "#8F8F8F" }}
+              className="relative flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full disabled:opacity-50"
+              style={{ color: "#9A9A9A" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = "#F5F5F5"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "#9A9A9A"; }}
             >
-              <svg className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: "#6F6F6F" }}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               {syncing ? "Syncing..." : "Sync Drive"}
@@ -164,18 +199,31 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="p-3" style={{ borderTop: "1px solid #232323" }}>
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0" style={{ background: "#C60D60" }}>
+      {/* User card */}
+      <div className="p-3" style={{ borderTop: "1px solid #2A2A2A" }}>
+        <div className="flex items-center gap-3 px-2 py-1.5">
+          <div
+            className="flex-shrink-0 flex items-center justify-center rounded-full text-white text-sm font-semibold"
+            style={{ width: 36, height: 36, background: "#C60D60" }}
+          >
             {session?.user?.name?.[0] || "?"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{session?.user?.name}</p>
-            <p className="text-xs truncate capitalize" style={{ color: "#737373" }}>{session?.user?.role}</p>
+            <p className="text-sm font-medium truncate" style={{ color: "#F5F5F5" }}>
+              {session?.user?.name}
+            </p>
+            <p style={monoStyle}>{session?.user?.role}</p>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <ThemeToggle />
-            <button onClick={() => signOut()} style={{ color: "#737373" }} className="hover:text-white transition-colors">
+            <button
+              onClick={() => signOut()}
+              className="flex items-center justify-center rounded transition-colors"
+              aria-label="Sign out"
+              style={{ color: "#6F6F6F", padding: "0.25rem" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#C60D60"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#6F6F6F"; }}
+            >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
