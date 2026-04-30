@@ -74,7 +74,12 @@ export async function GET(req: NextRequest) {
       .returning();
   }
 
-  // Mint a NextAuth v5 session JWT
+  const isSecure = req.url.startsWith("https://");
+  const cookieName = isSecure
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
+
+  // Mint a NextAuth v5 session JWT — salt must match the cookie name
   const sessionToken = await encode({
     token: {
       sub: user.id,
@@ -84,12 +89,8 @@ export async function GET(req: NextRequest) {
       id: user.id,
     },
     secret: process.env.NEXTAUTH_SECRET!,
+    salt: cookieName,
   });
-
-  const isSecure = req.url.startsWith("https://");
-  const cookieName = isSecure
-    ? "__Secure-authjs.session-token"
-    : "authjs.session-token";
 
   const response = NextResponse.redirect(new URL(callbackUrl, req.url));
   response.cookies.set(cookieName, sessionToken, {
