@@ -51,11 +51,10 @@ export default function Sidebar() {
       className="fixed left-0 top-0 bottom-0 w-56 flex flex-col z-20"
       style={{ background: "#141414", borderRight: "1px solid #232323" }}
     >
-      <div className="px-4 py-3.5 flex items-start justify-between" style={{ borderBottom: "1px solid #232323" }}>
-        <span className="font-bold text-white text-[0.8125rem] uppercase tracking-[0.04em] leading-[1.25]">
-          Fraggell<br />Footage Store
-        </span>
-        <span className="w-2 h-2 rounded-full mt-0.5 flex-shrink-0" style={{ background: "#C60D60" }} />
+      <div className="px-4 py-3.5 flex items-center" style={{ borderBottom: "1px solid #232323" }}>
+        <span className="font-display font-semibold leading-none" style={{ fontSize: 17, letterSpacing: "-0.015em", color: "#ffffff" }}>Fraggell</span>
+        <span className="font-display font-semibold leading-none" style={{ fontSize: 17, color: "#C60D60" }}>.</span>
+        <span className="font-display font-medium leading-none" style={{ fontSize: 17, letterSpacing: "-0.015em", color: "#8F8F8F" }}>footage</span>
       </div>
 
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">

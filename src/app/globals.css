@@ -24,8 +24,15 @@ html[data-theme="dark"] {
 body {
   background: var(--color-bg);
   color: var(--color-fg);
-  font-family: "Sora", system-ui, sans-serif;
+  font-family: var(--font-sora, "Sora"), system-ui, sans-serif;
   transition: background 0.2s, color 0.2s;
+}
+
+.font-display {
+  font-family: var(--font-bricolage, "Bricolage Grotesque"), system-ui, sans-serif;
+  font-feature-settings: "ss01", "ss02";
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
 }
 
 ::-webkit-scrollbar { width: 6px; }

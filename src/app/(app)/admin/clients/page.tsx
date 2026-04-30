@@ -148,7 +148,7 @@ export default function ManageClientsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--color-fg)" }}>Manage Clients</h1>
+          <h1 className="font-display text-2xl font-bold" style={{ color: "var(--color-fg)" }}>Manage Clients</h1>
           <p className="text-muted text-sm mt-1">
             {clients.length} client{clients.length !== 1 ? "s" : ""}
           </p>

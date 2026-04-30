@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
-import { Sora } from "next/font/google";
+import { Sora, Bricolage_Grotesque } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 
-const sora = Sora({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
+const sora = Sora({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-sora" });
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "FootageStore",
@@ -16,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${sora.className} h-full antialiased`}>
+    <html lang="en" className={`${sora.variable} ${bricolage.variable} h-full antialiased`} style={{ fontFamily: "var(--font-sora), system-ui, sans-serif" }}>
       <head>
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script src="/theme-init.js" />
