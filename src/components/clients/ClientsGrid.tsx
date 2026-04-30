@@ -63,11 +63,6 @@ export default function ClientsGrid({ clients }: { clients: Client[] }) {
                 <p style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.015em", margin: 0, lineHeight: 1.2, color: "var(--color-fg)" }}>
                   {label}
                 </p>
-                {client.displayName && (
-                  <p style={{ fontSize: 12, color: "var(--color-muted)", margin: "4px 0 0" }}>
-                    {client.name}
-                  </p>
-                )}
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 16, borderTop: "1px solid var(--color-border)", marginTop: 16 }}>
                 <span className="fg-tile-arrow">→</span>
