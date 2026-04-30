@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+import { getToken } from "next-auth/jwt";
 
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -17,9 +15,19 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for existing NextAuth session
-  const session = await auth();
-  if (session) return NextResponse.next();
+  // Check for existing NextAuth session (edge-compatible, no Node.js crypto)
+  const isSecure = req.url.startsWith("https://");
+  const cookieName = isSecure
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
+
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET!,
+    cookieName,
+    salt: cookieName,
+  });
+  if (token) return NextResponse.next();
 
   // No session — check for hub_auth cookie
   const hubToken = req.cookies.get("hub_auth")?.value;
