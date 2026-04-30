@@ -47,23 +47,31 @@ export default function Sidebar() {
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-56 bg-surface border-r border-border flex flex-col z-20">
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <span className="font-bold text-white">FootageStore</span>
-        </div>
+      <div className="px-4 py-3.5 border-b border-border flex items-start justify-between">
+        <span className="font-bold text-white text-[0.8125rem] uppercase tracking-[0.04em] leading-[1.25]">
+          Fraggell<br />Footage Store
+        </span>
+        <span className="w-2 h-2 rounded-full bg-accent mt-0.5 flex-shrink-0" />
       </div>
 
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+        <a
+          href="https://hub.fraggell.com"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-surface-hover transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Fraggell Hub
+        </a>
+        <div className="border-t border-border my-1" />
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
               pathname.startsWith(item.href)
-                ? "bg-surface-hover text-white"
+                ? "bg-accent text-white"
                 : "text-neutral-400 hover:text-white hover:bg-surface-hover"
             }`}
           >
@@ -151,7 +159,7 @@ export default function Sidebar() {
 
       <div className="p-3 border-t border-border">
         <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-medium">
+          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-sm font-semibold">
             {session?.user?.name?.[0] || "?"}
           </div>
           <div className="flex-1 min-w-0">

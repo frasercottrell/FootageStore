@@ -3,17 +3,17 @@
 @theme inline {
   --color-bg: #0a0a0a;
   --color-surface: #141414;
-  --color-surface-hover: #1a1a1a;
-  --color-border: #262626;
-  --color-accent: #3b82f6;
-  --color-accent-hover: #2563eb;
+  --color-surface-hover: #1f1f1f;
+  --color-border: #232323;
+  --color-accent: #C60D60;
+  --color-accent-hover: #9B0A4B;
   --color-muted: #737373;
 }
 
 body {
   background: var(--color-bg);
   color: #e5e5e5;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "Sora", system-ui, sans-serif;
 }
 
 ::-webkit-scrollbar { width: 6px; }
@@ -25,7 +25,7 @@ body {
   bottom: 0;
   left: 0;
   height: 3px;
-  background: #3b82f6;
+  background: #C60D60;
   width: 0%;
 }
 
