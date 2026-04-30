@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+.env*
+!.env.example
+
+# Local dev/backfill scripts not needed in the image
+backfill_*.ts
+backfill_*.js
+clear_queue.js
+genhash.js
+proxy_backfill*.js
+plugin-auth.js
